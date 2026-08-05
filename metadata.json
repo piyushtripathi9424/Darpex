@@ -1,0 +1,6 @@
+{
+  "name": "Premium Car",
+  "description": "Bespoke automotive detailing, ceramic coating, paint protection film, custom modifications, and luxury car maintenance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

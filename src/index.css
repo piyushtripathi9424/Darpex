@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #08080a;
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  }
+  
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Syne', 'Helvetica Neue', sans-serif;
+  }
+}
+
+/* Luxury Automotive Showroom Theme Utilities */
+.luxury-gradient {
+  background: radial-gradient(circle at 50% 0%, #16161f 0%, #08080a 80%);
+}
+
+.gold-accent {
+  color: #d4af37;
+}
+
+/* Solid Premium Cards (Replacing transparent glassmorphism) */
+.border-glass {
+  border: 1px solid #22222d;
+}
+
+.bg-glass {
+  background: #121217;
+  border: 1px solid #22222d;
+}
+
+.glass-panel {
+  background: #14141a;
+  border: 1px solid #262633;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+}
+
+.glass-panel-gold {
+  background: #16161e;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 10px 30px -10px rgba(212, 175, 55, 0.15);
+}
+
+.tracking-widest-plus {
+  letter-spacing: 0.3em;
+}
+
+.tracking-super {
+  letter-spacing: 0.4em;
+}
+
+/* Custom Scrollbar for Luxury Dark Aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #08080a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #20202a;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* Metallic & Gold Gradient Accents */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #FFF0CA 0%, #E5C158 40%, #B88E28 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-gradient-bg {
+  background: linear-gradient(135deg, #E5C158 0%, #C49826 100%);
+}
+
+.gold-border-glow {
+  box-shadow: 0 0 25px -3px rgba(212, 175, 55, 0.3);
+}
+
+.carbon-pattern {
+  background-color: #08080a;
+  background-image: 
+    radial-gradient(rgba(212, 175, 55, 0.08) 1px, transparent 0),
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px, 12px 12px, 12px 12px;
+}
+
+/* Range input styling for split before-after image slider */
+input[type=range].slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: ew-resize;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+@keyframes infiniteScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-infinite-scroll {
+  animation: infiniteScroll 20s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.animate-infinite-scroll:hover {
+  animation-play-state: paused;
+}
