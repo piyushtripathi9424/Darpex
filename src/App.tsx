@@ -226,7 +226,7 @@ export default function App() {
           />
 
           {/* Main Content Area */}
-          <main className="flex-1">
+          <main className="flex-1 pb-20 lg:pb-0">
             <AnimatePresence mode="wait">
               {currentView === 'home' && (
                 <PageTransition key="home">

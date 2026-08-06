@@ -29,8 +29,8 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ services, onOp
     : services.filter(s => s.category === activeCategory);
 
   return (
-    <section id="services" className="py-20 bg-[#08080a] relative border-b border-[#222230]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    <section id="services" className="py-8 md:py-20 bg-[#08080a] relative border-b border-[#222230]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 md:space-y-12">
 
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
@@ -40,18 +40,18 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ services, onOp
           <h2 className="text-4xl sm:text-6xl font-light tracking-tight text-white font-display">
             Bespoke Services & <span className="font-bold gold-gradient-text">Packages</span>
           </h2>
-          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed uppercase tracking-wider">
+          <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
             Explore our detailed procedures, warranties, and rates. Every treatment is performed in climate-controlled clean room bays.
           </p>
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-2 max-w-4xl mx-auto">
+        <div className="flex items-center gap-2 max-w-4xl mx-auto overflow-x-auto hide-scrollbar whitespace-nowrap md:flex-wrap md:justify-center pb-2 md:pb-0 px-2 sm:px-0">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 rounded-sm border ${activeCategory === cat.id
+              className={`shrink-0 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 rounded-sm border ${activeCategory === cat.id
                   ? 'bg-[#d4af37] text-black border-[#d4af37] font-extrabold shadow-md'
                   : 'bg-[#121218] text-zinc-300 border-[#262636] hover:bg-[#181822]'
                 }`}

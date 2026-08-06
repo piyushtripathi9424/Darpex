@@ -209,12 +209,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center gap-2">
           <button
-            onClick={onOpenBooking}
-            className="bg-[#d4af37] text-black px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider"
-          >
-            Book Service
-          </button>
-          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-zinc-300 hover:text-white"
           >

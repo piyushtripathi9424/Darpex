@@ -19,7 +19,7 @@ export const Hero: React.FC<HeroProps> = ({
   const y = useTransform(scrollY, [0, 1000], [0, 300]);
 
   return (
-    <section className="relative w-full flex flex-col overflow-hidden bg-[#08080a] luxury-gradient pt-[80px] pb-12 border-b border-[#222230]">
+    <section className="relative w-full flex flex-col overflow-hidden bg-[#08080a] luxury-gradient pt-8 pb-0 md:pt-[80px] md:pb-12">
 
       <div className="absolute inset-0 z-0 overflow-hidden">
         <motion.div style={{ y }} className="w-full h-[120%] -top-[10%] relative">
@@ -56,7 +56,7 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             {/* Prompt Heading */}
-            <h1 className="text-[13vw] sm:text-7xl xl:text-8xl font-light tracking-tight leading-[1.1] sm:leading-[0.92] text-white font-display">
+            <h1 className="text-5xl sm:text-7xl xl:text-8xl font-light tracking-tight leading-[1.1] sm:leading-[0.92] text-white font-display">
               <StaggeredText text="Darpex" delay={0.2} />
               <div className="font-bold gold-gradient-text w-full">
                 <StaggeredText text="For Your Car" delay={0.3} />
@@ -85,27 +85,23 @@ export const Hero: React.FC<HeroProps> = ({
               <div className="text-[10px] font-bold uppercase tracking-widest text-[#d4af37] font-display mb-4">
                 Services Preview
               </div>
-              <div className="overflow-hidden w-full relative group py-1" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
-                <div className="animate-infinite-scroll flex gap-3 text-xs font-medium text-zinc-300 pr-3">
-                  {[...Array(2)].map((_, i) => (
-                    <React.Fragment key={i}>
-                      <button onClick={() => onNavigateToSection('services')} className="px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2 whitespace-nowrap">
-                        <Droplets className="w-3.5 h-3.5 text-blue-400" /> Car Wash
-                      </button>
-                      <button onClick={() => onNavigateToSection('services')} className="px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2 whitespace-nowrap">
-                        <Sofa className="w-3.5 h-3.5 text-orange-400" /> Interior Cleaning
-                      </button>
-                      <button onClick={() => onNavigateToSection('services')} className="px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2 whitespace-nowrap">
-                        <Shield className="w-3.5 h-3.5 text-emerald-400" /> Ceramic Coating
-                      </button>
-                      <button onClick={() => onNavigateToSection('services')} className="px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2 whitespace-nowrap">
-                        <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" /> Detailing
-                      </button>
-                      <button onClick={() => onNavigateToSection('services')} className="px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2 whitespace-nowrap">
-                        <Wrench className="w-3.5 h-3.5 text-zinc-400" /> Modification
-                      </button>
-                    </React.Fragment>
-                  ))}
+              <div className="w-full relative py-1">
+                <div className="flex gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap pb-2 text-xs font-medium text-zinc-300">
+                  <button onClick={() => onNavigateToSection('services')} className="shrink-0 px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2">
+                    <Droplets className="w-3.5 h-3.5 text-blue-400" /> Car Wash
+                  </button>
+                  <button onClick={() => onNavigateToSection('services')} className="shrink-0 px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2">
+                    <Sofa className="w-3.5 h-3.5 text-orange-400" /> Interior Cleaning
+                  </button>
+                  <button onClick={() => onNavigateToSection('services')} className="shrink-0 px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5 text-emerald-400" /> Ceramic Coating
+                  </button>
+                  <button onClick={() => onNavigateToSection('services')} className="shrink-0 px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" /> Detailing
+                  </button>
+                  <button onClick={() => onNavigateToSection('services')} className="shrink-0 px-4 py-2 bg-[#121218] border border-[#2a2a3a] hover:border-[#d4af37] text-white text-[11px] font-semibold transition-all rounded-sm flex items-center gap-2">
+                    <Wrench className="w-3.5 h-3.5 text-zinc-400" /> Modification
+                  </button>
                 </div>
               </div>
             </div>
