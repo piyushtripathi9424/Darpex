@@ -151,16 +151,16 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <div className="w-16 h-16 rounded-sm bg-[#d4af37] text-black font-black text-xl flex items-center justify-center shadow-lg font-display">
                   {initials}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-light tracking-tight text-white font-display uppercase">
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                    <h1 className="text-2xl font-light tracking-tight text-white font-display uppercase break-words">
                       {nameParts[0]} <span className="font-bold text-[#d4af37]">{nameParts.slice(1).join(' ')}</span>
                     </h1>
-                    <span className="bg-[#181822] text-[#d4af37] border border-[#d4af37]/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded-sm">
+                    <span className="inline-block w-fit bg-[#181822] text-[#d4af37] border border-[#d4af37]/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded-sm whitespace-nowrap">
                       VIP Executive Client
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400 uppercase tracking-widest mt-1">
+                  <p className="text-xs text-zinc-400 uppercase tracking-widest mt-1 sm:mt-1 break-words">
                     Client ID: PC-CLIENT-8801 • Garage Active
                   </p>
                 </div>

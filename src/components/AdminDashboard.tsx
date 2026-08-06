@@ -399,22 +399,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   {/* Actions & Workflow Controls */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => {
                           setEditingSlotBookingId(booking.id);
                           setSlotDateInput(booking.date);
                           setSlotTimeInput(booking.timeSlot);
                         }}
-                        className="bg-[#181822] hover:bg-[#20202c] text-zinc-300 border border-[#2a2a3a] px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                        className="bg-[#181822] hover:bg-[#20202c] text-zinc-300 border border-[#2a2a3a] px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <Clock className="w-3.5 h-3.5 text-[#d4af37]" /> Change Slot
                       </button>
 
                       <button
                         onClick={() => onUpdateBookingStatus(booking.id, 'Confirmed')}
-                        className={`px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider ${
+                        className={`px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap text-center ${
                           booking.status === 'Confirmed' ? 'bg-emerald-500 text-black font-extrabold' : 'bg-[#181822] text-zinc-300 border border-[#2a2a3a] hover:bg-[#20202c]'
                         }`}
                       >
@@ -423,7 +423,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                       <button
                         onClick={() => onUpdateBookingStatus(booking.id, 'Completed')}
-                        className={`px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider ${
+                        className={`px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap text-center ${
                           booking.status === 'Completed' ? 'bg-blue-500 text-black font-extrabold' : 'bg-[#181822] text-zinc-300 border border-[#2a2a3a] hover:bg-[#20202c]'
                         }`}
                       >
@@ -436,7 +436,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             if (onDeleteBooking) onDeleteBooking(booking.id);
                           }
                         }}
-                        className="px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider bg-[#181822] text-red-400 border border-[#2a2a3a] hover:bg-red-950/40 hover:border-red-500/50"
+                        className="px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap text-center bg-[#181822] text-red-400 border border-[#2a2a3a] hover:bg-red-950/40 hover:border-red-500/50"
                       >
                         Cancel Booking
                       </button>
