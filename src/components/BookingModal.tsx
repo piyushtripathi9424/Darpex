@@ -350,21 +350,27 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             {/* Bottom Nav */}
-            <div className="flex items-center justify-between pt-4 border-t border-[#262636]">
-              <button
-                onClick={() => setStep(1)}
-                className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-[#262636] gap-4">
+              <div className="flex justify-between w-full sm:w-auto items-center">
+                <button
+                  onClick={() => setStep(1)}
+                  className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1 whitespace-nowrap"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+                <div className="text-right sm:hidden">
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest block">Total</span>
+                  <span className="text-xl font-bold text-[#d4af37] font-display">₹{totalPrice}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+                <div className="text-right hidden sm:block">
                   <span className="text-[10px] text-zinc-400 uppercase tracking-widest block">Total</span>
                   <span className="text-xl font-bold text-[#d4af37] font-display">₹{totalPrice}</span>
                 </div>
                 <button
                   onClick={() => setStep(3)}
-                  className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-6 py-3 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg"
+                  className="w-full sm:w-auto justify-center bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
                 >
                   <span>Select Date & Time</span> <ArrowRight className="w-4 h-4" />
                 </button>
@@ -415,16 +421,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-[#262636]">
-              <button
-                onClick={() => setStep(2)}
-                className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-[#262636] gap-4">
+              <div className="w-full sm:w-auto flex justify-start">
+                <button
+                  onClick={() => setStep(2)}
+                  className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1 whitespace-nowrap"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+              </div>
               <button
                 onClick={() => setStep(4)}
-                className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-6 py-3 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg"
+                className="w-full sm:w-auto justify-center bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
               >
                 <span>View Summary</span> <ArrowRight className="w-4 h-4" />
               </button>
@@ -470,16 +478,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-[#262636]">
-              <button
-                onClick={() => setStep(3)}
-                className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-[#262636] gap-4">
+              <div className="w-full sm:w-auto flex justify-start">
+                <button
+                  onClick={() => setStep(3)}
+                  className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1 whitespace-nowrap"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+              </div>
               <button
                 onClick={() => setStep(5)}
-                className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-8 py-3.5 text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-xl"
+                className="w-full sm:w-auto justify-center bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 sm:px-8 py-3.5 text-[11px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-xl whitespace-nowrap"
               >
                 <span>Proceed To Payment</span> <ArrowRight className="w-4 h-4" />
               </button>
@@ -541,16 +551,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-[#262636]">
-              <button
-                onClick={() => setStep(4)}
-                className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-[#262636] gap-4">
+              <div className="w-full sm:w-auto flex justify-start">
+                <button
+                  onClick={() => setStep(4)}
+                  className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest flex items-center gap-1 whitespace-nowrap"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+              </div>
               <button
                 onClick={handleConfirmPayment}
-                className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-8 py-3.5 text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-xl"
+                className="w-full sm:w-auto justify-center bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 sm:px-8 py-3.5 text-[11px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-xl whitespace-nowrap"
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span>Confirm Payment</span>

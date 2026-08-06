@@ -334,7 +334,7 @@ export default function App() {
           {/* Mobile Booking Bar */}
           <MobileStickyBookingBar 
             onOpenBooking={() => handleOpenBooking()} 
-            isVisible={!isBookingOpen && !isLoginOpen && currentView !== 'admin-dashboard'} 
+            isVisible={!isBookingOpen && !isLoginOpen && currentView === 'home'} 
           />
         </>
       )}
