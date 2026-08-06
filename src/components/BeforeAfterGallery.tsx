@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BEFORE_AFTER_GALLERY } from '../data/mockData';
 import { Sparkles, Sliders, ArrowLeftRight, CheckCircle2, Mouse } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export const BeforeAfterGallery: React.FC = () => {
   const [sliderPos, setSliderPos] = useState<number>(50);
@@ -30,7 +31,13 @@ export const BeforeAfterGallery: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="text-center max-w-3xl mx-auto space-y-4"
+        >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border-glass bg-glass text-amber-400 text-[10px] font-bold uppercase tracking-widest">
             <Sparkles className="w-3.5 h-3.5" /> Proof of Precision
           </div>
@@ -40,7 +47,7 @@ export const BeforeAfterGallery: React.FC = () => {
           <p className="text-white/50 text-xs sm:text-sm leading-relaxed uppercase tracking-wider">
             Drag the vertical divider to inspect the before-and-after surface enhancements performed in our clean room bays.
           </p>
-        </div>
+        </motion.div>
 
         {/* Gallery Selector Tabs */}
         <div className="flex flex-wrap items-center justify-center gap-2">

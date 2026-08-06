@@ -12,14 +12,39 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLogin } from './components/AdminLogin';
 import { MobileStickyBookingBar } from './components/MobileStickyBookingBar';
 import { Footer } from './components/Footer';
+import { PageLoader } from './components/PageLoader';
+import { BrandMarquee } from './components/BrandMarquee';
+import { SmoothScroll } from './components/SmoothScroll';
+import { useToast } from './components/ToastContext';
+import { motion, AnimatePresence } from 'motion/react';
 
-import { INITIAL_BOOKINGS, SERVICES_DATA } from './data/mockData';
+const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 15 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -15 }}
+    transition={{ duration: 0.3 }}
+  >
+    {children}
+  </motion.div>
+);
+
+import { INITIAL_BOOKINGS, SERVICES_DATA, INITIAL_CUSTOMER_CARS } from './data/mockData';
 import { ServiceBooking, CustomerCar, ServiceItem } from './types';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'garage' | 'my-services' | 'admin-login' | 'admin-dashboard'>('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAppLoaded, setIsAppLoaded] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsAppLoaded(true);
+    }, 2000); // Wait for initial loader
+    return () => clearTimeout(timer);
+  }, []);
   
   // User Authentication State loaded from session storage
   const [currentUser, setCurrentUser] = useState<{ name: string; emailOrPhone: string } | null>(() => {
@@ -36,6 +61,9 @@ export default function App() {
 
   // Global Bookings State
   const [bookings, setBookings] = useState<ServiceBooking[]>(INITIAL_BOOKINGS);
+
+  // Global Cars State
+  const [cars, setCars] = useState<CustomerCar[]>(INITIAL_CUSTOMER_CARS);
 
   // Global Services State
   const [services, setServices] = useState<ServiceItem[]>(SERVICES_DATA);
@@ -105,6 +133,7 @@ export default function App() {
 
   const handleAddBookingToState = (newBooking: ServiceBooking) => {
     setBookings([newBooking, ...bookings]);
+    toast(`Successfully booked ${newBooking.serviceName} for ${newBooking.carDetails.make}`, 'success');
   };
 
   const handleUpdateBookingStatus = (bookingId: string, newStatus: ServiceBooking['status']) => {
@@ -115,16 +144,26 @@ export default function App() {
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, date: newDate, timeSlot: newSlot } : b));
   };
 
+  const handleDeleteBooking = (bookingId: string) => {
+    setBookings(bookings.filter(b => b.id !== bookingId));
+    toast('Booking has been removed successfully.', 'info');
+  };
+
   const handleNavigateToSection = (sectionId: string) => {
     if (currentView !== 'home') {
       setCurrentView('home');
-    }
-    setTimeout(() => {
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+        }
+      }, 400);
+    } else {
       const element = document.getElementById(sectionId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
       }
-    }, 100);
+    }
   };
 
   const handleLoginSuccess = (user: { name: string; emailOrPhone: string }) => {
@@ -140,6 +179,7 @@ export default function App() {
     if (typeof window !== 'undefined') {
       window.history.pushState({ view: 'garage' }, '', '/dashboard');
     }
+    toast(`Welcome back, ${user.name}!`, 'info');
   };
 
   const handleLogout = () => {
@@ -164,117 +204,141 @@ export default function App() {
     if (typeof window !== 'undefined') {
       window.history.replaceState({ view: 'home' }, '', '/');
     }
+    toast('You have successfully logged out.', 'info');
   };
 
   return (
-    <div className="min-h-screen bg-[#08080a] luxury-gradient text-white flex flex-col font-sans">
+    <SmoothScroll>
+      <div className="min-h-screen bg-[#08080a] luxury-gradient text-white flex flex-col font-sans noise-overlay">
+        <PageLoader isLoading={!isAppLoaded} />
       
-      {/* Navigation Header */}
-      <Navbar
-        currentView={currentView}
-        setCurrentView={handleGuardedViewNavigation}
-        onOpenBooking={() => handleOpenBooking()}
-        onOpenLogin={() => setIsLoginOpen(true)}
-        onNavigateToSection={handleNavigateToSection}
-        user={currentUser}
-        onLogout={handleLogout}
-      />
+      {isAppLoaded && (
+        <>
 
-      {/* Main Content Area */}
-      <main className="flex-1">
-        {currentView === 'home' && (
-          <>
-            <Hero
-              onOpenBooking={() => handleOpenBooking()}
-              onNavigateToSection={handleNavigateToSection}
-            />
-
-            <ServicesSection services={services} onOpenBooking={handleOpenBooking} />
-
-            <TrustSection />
-
-            <BeforeAfterGallery />
-
-            <AboutAndContactSection
-              onOpenBooking={() => handleOpenBooking()}
-            />
-          </>
-        )}
-
-        {currentView === 'garage' && currentUser && (
-          <CustomerDashboard
-            bookings={bookings}
-            onOpenBooking={(serviceId, car) => handleOpenBooking(serviceId, car)}
-            defaultSubTab="garage"
-            userName={currentUser.name}
+          <Navbar
+            currentView={currentView}
+            setCurrentView={handleGuardedViewNavigation}
+            onOpenBooking={() => handleOpenBooking()}
+            onOpenLogin={() => setIsLoginOpen(true)}
+            onNavigateToSection={handleNavigateToSection}
+            user={currentUser}
+            onLogout={handleLogout}
           />
-        )}
 
-        {currentView === 'my-services' && currentUser && (
-          <CustomerDashboard
-            bookings={bookings}
-            onOpenBooking={(serviceId, car) => handleOpenBooking(serviceId, car)}
-            defaultSubTab="services"
-            userName={currentUser.name}
+          {/* Main Content Area */}
+          <main className="flex-1">
+            <AnimatePresence mode="wait">
+              {currentView === 'home' && (
+                <PageTransition key="home">
+                  <Hero
+                    onOpenBooking={() => handleOpenBooking()}
+                    onNavigateToSection={handleNavigateToSection}
+                  />
+
+                  <ServicesSection services={services} onOpenBooking={handleOpenBooking} />
+
+                  <TrustSection />
+
+                  <BeforeAfterGallery />
+
+                  <AboutAndContactSection
+                    onOpenBooking={() => handleOpenBooking()}
+                  />
+                </PageTransition>
+              )}
+
+              {currentView === 'garage' && currentUser && (
+                <PageTransition key="garage">
+                  <CustomerDashboard
+                    bookings={bookings}
+                    onOpenBooking={(serviceId, car) => handleOpenBooking(serviceId, car)}
+                    onDeleteBooking={handleDeleteBooking}
+                    defaultSubTab="garage"
+                    userName={currentUser.name}
+                    cars={cars}
+                    setCars={setCars}
+                  />
+                </PageTransition>
+              )}
+
+              {currentView === 'my-services' && currentUser && (
+                <PageTransition key="my-services">
+                  <CustomerDashboard
+                    bookings={bookings}
+                    onOpenBooking={(serviceId, car) => handleOpenBooking(serviceId, car)}
+                    onDeleteBooking={handleDeleteBooking}
+                    defaultSubTab="services"
+                    userName={currentUser.name}
+                    cars={cars}
+                    setCars={setCars}
+                  />
+                </PageTransition>
+              )}
+
+              {currentView === 'admin-login' && (
+                <PageTransition key="admin-login">
+                  <AdminLogin
+                    onAdminLoginSuccess={() => setCurrentView('admin-dashboard')}
+                    onBackToCustomer={() => setCurrentView('home')}
+                  />
+                </PageTransition>
+              )}
+
+              {currentView === 'admin-dashboard' && (
+                <PageTransition key="admin-dashboard">
+                  <AdminDashboard 
+                    services={services}
+                    setServices={setServices}
+                    bookings={bookings} 
+                    onUpdateBookingStatus={handleUpdateBookingStatus}
+                    onUpdateBookingSlot={handleUpdateBookingSlot}
+                    onDeleteBooking={handleDeleteBooking}
+                    onAdminLogout={() => {
+                      setCurrentUser(null);
+                      setCurrentView('home');
+                    }} 
+                  />
+                </PageTransition>
+              )}
+            </AnimatePresence>
+          </main>
+
+          {/* Footer */}
+          <Footer 
+            onNavigateToSection={handleNavigateToSection} 
+            setCurrentView={handleGuardedViewNavigation}
+            onOpenBooking={() => handleOpenBooking()}
+            onOpenLogin={() => setIsLoginOpen(true)}
+            user={currentUser}
           />
-        )}
 
-        {currentView === 'admin-login' && (
-          <AdminLogin
-            onAdminLoginSuccess={() => setCurrentView('admin-dashboard')}
-            onBackToCustomer={() => setCurrentView('home')}
-          />
-        )}
-
-        {currentView === 'admin-dashboard' && (
-          <AdminDashboard 
+          {/* Booking Modal Flow */}
+          <BookingModal
+            isOpen={isBookingOpen}
+            onClose={() => setIsBookingOpen(false)}
+            preselectedServiceId={preselectedServiceId}
+            preselectedCar={preselectedCar}
+            onAddBookingToState={handleAddBookingToState}
+            onNavigateToCustomerPortal={() => handleNavigateToSection('my-services')}
             services={services}
-            setServices={setServices}
-            bookings={bookings} 
-            onUpdateBookingStatus={handleUpdateBookingStatus}
-            onUpdateBookingSlot={handleUpdateBookingSlot}
-            onAdminLogout={() => {
-              setCurrentUser(null);
-              setCurrentView('home');
-            }} 
+            cars={cars}
           />
-        )}
-      </main>
 
-      {/* Footer */}
-      <Footer
-        onNavigateToSection={handleNavigateToSection}
-        setCurrentView={handleGuardedViewNavigation}
-        onOpenBooking={() => handleOpenBooking()}
-        user={currentUser}
-        onOpenLogin={() => setIsLoginOpen(true)}
-      />
+          {/* Login Modal */}
+          <LoginModal
+            isOpen={isLoginOpen}
+            onClose={() => setIsLoginOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
+          />
 
-      {/* Mobile Sticky Booking Bar */}
-      <MobileStickyBookingBar
-        onOpenBooking={() => handleOpenBooking()}
-      />
-
-      {/* Booking Modal Flow */}
-        <BookingModal 
-          isOpen={isBookingOpen} 
-          onClose={() => setIsBookingOpen(false)}
-          preselectedServiceId={preselectedServiceId}
-          preselectedCar={preselectedCar}
-          onAddBookingToState={(booking) => {
-            setBookings([booking, ...bookings]);
-          }}
-          onNavigateToCustomerPortal={() => handleGuardedViewNavigation('my-services')}
-          services={services}
-        />
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-
-    </div>
+          {/* Mobile Booking Bar */}
+          <MobileStickyBookingBar 
+            onOpenBooking={() => handleOpenBooking()} 
+            isVisible={!isBookingOpen && !isLoginOpen && currentView !== 'admin-dashboard'} 
+          />
+        </>
+      )}
+      </div>
+    </SmoothScroll>
   );
 }

@@ -2,26 +2,34 @@ import React, { useState } from 'react';
 import { CustomerCar, ServiceBooking } from '../types';
 import { INITIAL_CUSTOMER_CARS } from '../data/mockData';
 import { Car, Clock, Plus, Trash2, Edit2, ShieldCheck, ArrowRight, Calendar, CheckCircle2, RefreshCw, X } from 'lucide-react';
+import { useToast } from './ToastContext';
 
 interface CustomerDashboardProps {
   bookings: ServiceBooking[];
   onOpenBooking: (serviceId?: string, preselectedCar?: CustomerCar) => void;
   defaultSubTab?: 'garage' | 'services';
   userName?: string;
+  cars: CustomerCar[];
+  setCars: (cars: CustomerCar[]) => void;
+  onDeleteBooking?: (bookingId: string) => void;
 }
 
 export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   bookings,
   onOpenBooking,
   defaultSubTab = 'garage',
-  userName
+  userName,
+  cars,
+  setCars,
+  onDeleteBooking
 }) => {
   const [activeTab, setActiveTab] = useState<'garage' | 'services'>(defaultSubTab);
-  const [cars, setCars] = useState<CustomerCar[]>(INITIAL_CUSTOMER_CARS);
 
   // Add / Edit Car Modal State
   const [showAddCarModal, setShowAddCarModal] = useState(false);
   const [editingCarId, setEditingCarId] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   const [make, setMake] = useState('BMW');
   const [model, setModel] = useState('3 Series');
@@ -51,7 +59,11 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
   const handleDeleteCar = (carId: string) => {
     if (confirm('Are you sure you want to remove this vehicle from your garage?')) {
+      const carToDelete = cars.find(c => c.id === carId);
       setCars(cars.filter(c => c.id !== carId));
+      if (carToDelete) {
+        toast(`${carToDelete.make} ${carToDelete.model} has been removed.`, 'info');
+      }
     }
   };
 
@@ -66,6 +78,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         year: Number(year),
         image: image || c.image
       } : c));
+      toast(`${make} ${model} details updated.`, 'success');
     } else {
       const createdCar: CustomerCar = {
         id: `car-${Date.now()}`,
@@ -80,6 +93,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         paintConditionScore: 9.2
       };
       setCars([...cars, createdCar]);
+      toast(`${make} ${model} added to your garage.`, 'success');
     }
     setShowAddCarModal(false);
   };
@@ -314,11 +328,21 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="text-right space-y-2">
+                      <div className="text-right space-y-2 flex flex-col items-end">
                         <div className="text-2xl font-bold text-[#d4af37] font-display">₹{b.totalPrice}</div>
                         <span className="inline-block text-[10px] text-emerald-300 border border-emerald-500/30 bg-emerald-950/80 px-3 py-1 uppercase tracking-widest font-bold">
                           Payment Verified ✓
                         </span>
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to cancel this service booking?')) {
+                              if (onDeleteBooking) onDeleteBooking(b.id);
+                            }
+                          }}
+                          className="mt-2 text-[10px] text-red-400 hover:text-red-300 uppercase tracking-widest font-bold underline decoration-red-900/50 hover:decoration-red-400 transition-colors"
+                        >
+                          Cancel Booking
+                        </button>
                       </div>
                     </div>
                   ))}

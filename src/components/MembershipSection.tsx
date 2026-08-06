@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MEMBERSHIP_PLANS } from '../data/mockData';
 import { ShieldCheck, CheckCircle2, Award, Sparkles, ArrowRight, Gift, Calendar, Calculator } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface MembershipSectionProps {
   onOpenBooking: () => void;
@@ -23,7 +24,13 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenBook
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="text-center max-w-3xl mx-auto space-y-4"
+        >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border-glass bg-glass text-amber-400 text-[10px] font-bold uppercase tracking-widest">
             <Award className="w-3.5 h-3.5" /> Continuous Excellence
           </div>
@@ -50,11 +57,10 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenBook
                 annualBilling ? 'bg-white text-black font-extrabold' : 'text-white/50 hover:text-white'
               }`}
             >
-              Annual Billing
-              <span className="bg-amber-400 text-black px-1.5 py-0.5 text-[8px] font-black uppercase">Save 20%</span>
+              Annual Billing <span className="bg-amber-400 text-black px-1.5 py-0.5 text-[8px] rounded-sm">-20%</span>
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Membership Cards Grid */}
         <div className="grid md:grid-cols-3 gap-8">

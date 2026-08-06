@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Calendar, User, Menu, X, Car, Wrench, ShieldCheck, LogOut } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,23 +21,51 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('home');
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (currentView !== 'home') {
+        setActiveSection(currentView);
+        return;
+      }
+      const servicesEl = document.getElementById('services');
+      if (servicesEl && window.scrollY >= servicesEl.offsetTop - 300) {
+        setActiveSection('services');
+      } else {
+        setActiveSection('home');
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // initialize
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentView]);
 
   const handleNavSectionClick = (sectionId: string) => {
-    if (currentView !== 'home') {
-      setCurrentView('home');
-      setTimeout(() => {
-        onNavigateToSection(sectionId);
-      }, 100);
+    onNavigateToSection(sectionId);
+    setMobileMenuOpen(false);
+  };
+
+  const handleHomeClick = () => {
+    if (currentView === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      onNavigateToSection(sectionId);
+      setCurrentView('home');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 400);
     }
+    setMobileMenuOpen(false);
+  };
+
+  const handleDashboardClick = (view: 'garage' | 'my-services') => {
+    setCurrentView(view);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setMobileMenuOpen(false);
   };
 
   // If in admin dashboard, render standard top header
   if (currentView === 'admin-dashboard' || currentView === 'admin-login') {
     return (
-      <header className="sticky top-0 z-50 bg-[#0c0c10] border-b border-[#262636]">
+      <header className="sticky top-0 z-50 bg-[#0c0c10]/80 backdrop-blur-md border-b border-[#262636]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div 
             onClick={() => setCurrentView('home')}
@@ -70,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-[#08080c] border-b border-[#222230]">
+    <header className="sticky top-0 z-50 bg-[#08080c]/80 backdrop-blur-md border-b border-[#222230]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Brand Logo */}
@@ -92,33 +120,37 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Customer Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-8 text-xs font-bold tracking-widest uppercase text-zinc-300">
+        <nav className="hidden lg:flex items-center gap-8 text-xs font-bold tracking-widest uppercase text-zinc-300 relative">
           <button 
-            onClick={() => setCurrentView('home')} 
-            className={`py-1 transition-colors hover:text-[#d4af37] ${currentView === 'home' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : ''}`}
+            onClick={handleHomeClick} 
+            className={`py-1 transition-all duration-300 hover:text-[#d4af37] relative group ${activeSection === 'home' ? 'text-white' : ''}`}
           >
             Home
+            <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-[#d4af37] transform origin-left transition-transform duration-300 ${activeSection === 'home' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
           </button>
           <button 
             onClick={() => handleNavSectionClick('services')} 
-            className="py-1 transition-colors hover:text-[#d4af37]"
+            className={`py-1 transition-all duration-300 hover:text-[#d4af37] relative group ${activeSection === 'services' ? 'text-white' : ''}`}
           >
             Services
+            <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-[#d4af37] transform origin-left transition-transform duration-300 ${activeSection === 'services' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
           </button>
 
           {user ? (
             <>
               <button 
-                onClick={() => setCurrentView('garage')} 
-                className={`py-1 transition-colors hover:text-[#d4af37] ${currentView === 'garage' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : ''}`}
+                onClick={() => handleDashboardClick('garage')} 
+                className={`py-1 transition-all duration-300 hover:text-[#d4af37] relative group ${currentView === 'garage' ? 'text-white' : ''}`}
               >
                 My Garage
+                <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-[#d4af37] transform origin-left transition-transform duration-300 ${currentView === 'garage' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
               </button>
               <button 
-                onClick={() => setCurrentView('my-services')} 
-                className={`py-1 transition-colors hover:text-[#d4af37] ${currentView === 'my-services' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : ''}`}
+                onClick={() => handleDashboardClick('my-services')} 
+                className={`py-1 transition-all duration-300 hover:text-[#d4af37] relative group ${currentView === 'my-services' ? 'text-white' : ''}`}
               >
                 My Services
+                <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-[#d4af37] transform origin-left transition-transform duration-300 ${currentView === 'my-services' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
               </button>
 
               <div className="flex items-center gap-3 ml-2">
@@ -211,13 +243,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user ? (
               <>
                 <button 
-                  onClick={() => { setCurrentView('garage'); setMobileMenuOpen(false); }}
+                  onClick={() => handleDashboardClick('garage')}
                   className="text-left py-2 hover:text-[#d4af37] border-b border-[#262636]"
                 >
                   My Garage
                 </button>
                 <button 
-                  onClick={() => { setCurrentView('my-services'); setMobileMenuOpen(false); }}
+                  onClick={() => handleDashboardClick('my-services')}
                   className="text-left py-2 hover:text-[#d4af37] border-b border-[#262636]"
                 >
                   My Services

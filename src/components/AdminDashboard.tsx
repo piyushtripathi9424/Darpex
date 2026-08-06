@@ -13,6 +13,7 @@ interface AdminDashboardProps {
   bookings: ServiceBooking[];
   onUpdateBookingStatus: (bookingId: string, newStatus: ServiceBooking['status']) => void;
   onUpdateBookingSlot?: (bookingId: string, newDate: string, newSlot: string) => void;
+  onDeleteBooking?: (bookingId: string) => void;
   onAdminLogout: () => void;
 }
 
@@ -22,6 +23,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   bookings,
   onUpdateBookingStatus,
   onUpdateBookingSlot,
+  onDeleteBooking,
   onAdminLogout
 }) => {
   const [bays, setBays] = useState<StudioBay[]>(STUDIO_BAYS);
@@ -426,6 +428,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         }`}
                       >
                         Mark Completed
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to cancel and delete this booking?')) {
+                            if (onDeleteBooking) onDeleteBooking(booking.id);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider bg-[#181822] text-red-400 border border-[#2a2a3a] hover:bg-red-950/40 hover:border-red-500/50"
+                      >
+                        Cancel Booking
                       </button>
                     </div>
 

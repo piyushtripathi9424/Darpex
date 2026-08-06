@@ -11,6 +11,7 @@ interface BookingModalProps {
   onAddBookingToState: (booking: ServiceBooking) => void;
   onNavigateToCustomerPortal: () => void;
   services: ServiceItem[];
+  cars: CustomerCar[];
 }
 
 export const BookingModal: React.FC<BookingModalProps> = ({
@@ -20,13 +21,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   preselectedCar,
   onAddBookingToState,
   onNavigateToCustomerPortal,
-  services
+  services,
+  cars
 }) => {
   const [step, setStep] = useState<number>(1);
 
-  // Registered cars list
-  const [registeredCars] = useState<CustomerCar[]>(INITIAL_CUSTOMER_CARS);
-  const [selectedCar, setSelectedCar] = useState<CustomerCar>(preselectedCar || INITIAL_CUSTOMER_CARS[0]);
+  // Use cars from props
+  const [selectedCar, setSelectedCar] = useState<CustomerCar | null>(preselectedCar || (cars.length > 0 ? cars[0] : null));
+  const [carSelectionError, setCarSelectionError] = useState(false);
 
   // Selected services
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
@@ -58,9 +60,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setPaymentScreenshot(null);
       if (preselectedCar) {
         setSelectedCar(preselectedCar);
+      } else if (cars.length > 0) {
+        setSelectedCar(cars[0]);
       } else {
-        setSelectedCar(registeredCars[0] || INITIAL_CUSTOMER_CARS[0]);
+        setSelectedCar(null);
       }
+      setCarSelectionError(false);
       if (preselectedServiceId) {
         setSelectedServiceIds([preselectedServiceId]);
       } else {
@@ -69,7 +74,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setDate('12 August 2026');
       setTimeSlot('3:00 PM');
     }
-  }, [isOpen, preselectedCar, preselectedServiceId, registeredCars]);
+  }, [isOpen, preselectedCar, preselectedServiceId, cars]);
 
   if (!isOpen) return null;
 
@@ -99,6 +104,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   const handleConfirmPayment = () => {
+    if (!selectedCar) {
+      setCarSelectionError(true);
+      setStep(1);
+      return;
+    }
+
     const serviceNamesString = selectedServicesList.map(s => s.name).join(', ');
     const newBooking: ServiceBooking = {
       id: `b-${Date.now()}`,
@@ -138,14 +149,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2 bg-[#1c1c28] border border-[#2a2a3c] rounded-sm transition-colors"
+          className="absolute top-6 right-6 text-zinc-400 hover:text-white p-2 bg-[#1c1c28] border border-[#2a2a3c] rounded-sm transition-colors z-50"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Progress Header */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#262636] pb-4 pr-10 sm:pr-0">
+        <div className="space-y-4 pt-4 sm:pt-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#262636] pb-4 pr-16 sm:pr-20 gap-4">
             <div>
               <h3 className="text-xl sm:text-2xl font-light text-white font-display uppercase tracking-wider">
                 Book <span className="font-bold text-[#d4af37]">Car Service</span>
@@ -177,26 +188,27 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
         {/* STEP 1: SELECT VEHICLE */}
         {step === 1 && (
-          <div className="space-y-6">
-            <label className="block text-xs font-bold text-zinc-200 uppercase tracking-widest font-display">
+          <div className="space-y-6 pt-4">
+            <div className="text-xs font-bold uppercase tracking-widest text-zinc-400 font-display">
               Choose Vehicle From Your Garage
-            </label>
+            </div>
+
+            {carSelectionError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider rounded-sm">
+                Please select a vehicle first to proceed.
+              </div>
+            )}
 
             <div className="grid sm:grid-cols-2 gap-4">
-              {registeredCars.map((car) => {
-                const isSelected = selectedCar.id === car.id;
+              {cars.map((car) => {
+                const isSelected = selectedCar?.id === car.id;
                 return (
-                  <button
+                  <div
                     key={car.id}
-                    type="button"
-                    onClick={() => setSelectedCar(car)}
-                    className={`p-4 text-left space-y-3 transition-all rounded-sm border ${
-                      isSelected
-                        ? 'bg-[#1e1c15] border-[#d4af37] text-white shadow-xl ring-1 ring-[#d4af37]'
-                        : 'bg-[#181820] border-[#2a2a3a] text-zinc-300 hover:bg-[#20202c]'
-                    }`}
+                    onClick={() => { setSelectedCar(car); setCarSelectionError(false); }}
+                    className={`relative overflow-hidden rounded-sm border transition-all cursor-pointer group ${isSelected ? 'bg-[#1e1c15] border-[#d4af37] text-white shadow-xl ring-1 ring-[#d4af37]' : 'bg-[#181820] border-[#2a2a3a] text-zinc-300 hover:bg-[#20202c]'}`}
                   >
-                    <div className="relative h-28 overflow-hidden rounded-sm border border-[#2a2a3a]">
+                    <div className="relative h-28 overflow-hidden rounded-sm border-b border-[#2a2a3a]">
                       <img src={car.image} alt={car.model} className="w-full h-full object-cover" />
                       {isSelected && (
                         <div className="absolute top-2 right-2 bg-[#d4af37] text-black p-1 shadow-md">
@@ -204,21 +216,29 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         </div>
                       )}
                     </div>
-                    <div>
+                    <div className="p-3">
                       <h4 className="font-bold text-sm text-white font-display uppercase tracking-wider">{car.make} {car.model}</h4>
                       <p className="text-[11px] text-[#d4af37] font-mono mt-0.5">Reg: {car.licensePlate}</p>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
 
             {/* Bottom Nav */}
-            <div className="flex items-center justify-between pt-4 border-t border-[#262636]">
-              <span className="text-xs text-zinc-400">Selected: <strong className="text-white">{selectedCar.make} {selectedCar.model}</strong></span>
+            <div className="pt-6 border-t border-[#262636] flex items-center justify-between">
+              <div className="text-zinc-400 text-xs">
+                Selected: <span className="text-white font-bold">{selectedCar ? `${selectedCar.make} ${selectedCar.model}` : 'None'}</span>
+              </div>
               <button
-                onClick={() => setStep(2)}
-                className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-6 py-3 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg"
+                onClick={() => {
+                  if (!selectedCar) {
+                    setCarSelectionError(true);
+                  } else {
+                    setStep(2);
+                  }
+                }}
+                className="px-6 py-2.5 bg-[#d4af37] text-black font-black uppercase tracking-widest text-xs rounded-sm hover:bg-[#e5c158] transition-colors flex items-center gap-2"
               >
                 <span>Select Services</span> <ArrowRight className="w-4 h-4" />
               </button>

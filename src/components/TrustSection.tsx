@@ -1,19 +1,45 @@
 import React from 'react';
 import { ShieldCheck, Award, Users, Star, CheckCircle, Sparkles, Flame, ShieldAlert, Cpu } from 'lucide-react';
 import { CUSTOMER_REVIEWS } from '../data/mockData';
+import { motion, useScroll, useTransform } from 'motion/react';
+import { useRef } from 'react';
 
 export const TrustSection: React.FC = () => {
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+  
+  const y = useTransform(scrollYProgress, [0, 1], ["-20%", "20%"]);
+
   return (
-    <section id="trust" className="py-20 bg-[#050505] relative overflow-hidden border-t border-b border-white/5">
+    <section ref={containerRef} id="trust" className="py-20 bg-[#050505] relative overflow-hidden border-t border-b border-white/5">
       
+      {/* Parallax Background */}
+      <motion.div style={{ y }} className="absolute inset-0 z-0 opacity-10">
+        <img 
+          src="https://images.unsplash.com/photo-1599839619722-39751411ea63?auto=format&fit=crop&w=2000&q=80" 
+          alt="Luxury background" 
+          className="w-full h-[140%] object-cover object-center relative -top-[20%]"
+        />
+        <div className="absolute inset-0 bg-[#050505]/60" />
+      </motion.div>
+
       {/* Background Accent Glows */}
-      <div className="absolute top-0 right-1/4 w-80 h-80 bg-white/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-white/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-80 h-80 bg-white/5 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-white/5 rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="text-center max-w-3xl mx-auto space-y-4"
+        >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border-glass bg-glass text-amber-400 text-[10px] font-bold uppercase tracking-widest">
             <Award className="w-3.5 h-3.5" /> Uncompromising Standards
           </div>
@@ -23,7 +49,7 @@ export const TrustSection: React.FC = () => {
           <p className="text-white/50 text-xs sm:text-sm leading-relaxed uppercase tracking-wider">
             Treating every Porsche, Ferrari, Rolls-Royce, and exotic supercar as a pinnacle masterpiece. Dust-free positive-pressure clean rooms, deionized water filtration, and thermal infrared curing.
           </p>
-        </div>
+        </motion.div>
 
         {/* 4 Core Pillars Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

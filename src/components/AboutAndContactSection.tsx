@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck, MapPin, Phone, Mail, Clock, Award, Sparkles, CheckCircle2 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export const AboutAndContactSection: React.FC<{ onOpenBooking: () => void }> = ({ onOpenBooking }) => {
   return (
@@ -9,7 +10,13 @@ export const AboutAndContactSection: React.FC<{ onOpenBooking: () => void }> = (
       <section id="about" className="py-20 bg-[#050505] border-t border-white/5 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
-          <div className="grid lg:grid-cols-12 gap-12 items-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8 }}
+            className="grid lg:grid-cols-12 gap-12 items-center"
+          >
             <div className="lg:col-span-6 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border-glass bg-glass text-amber-400 text-[10px] font-bold uppercase tracking-widest font-display">
                 <Sparkles className="w-3.5 h-3.5" /> About Darpex
@@ -50,14 +57,20 @@ export const AboutAndContactSection: React.FC<{ onOpenBooking: () => void }> = (
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </section>
 
       {/* CONTACT SECTION */}
       <section id="contact" className="py-20 bg-black/60 border-t border-b border-white/5 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12"
+        >
           
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border-glass bg-glass text-amber-400 text-[10px] font-bold uppercase tracking-widest font-display">
@@ -105,7 +118,7 @@ export const AboutAndContactSection: React.FC<{ onOpenBooking: () => void }> = (
             </div>
           </div>
 
-        </div>
+        </motion.div>
       </section>
 
     </div>

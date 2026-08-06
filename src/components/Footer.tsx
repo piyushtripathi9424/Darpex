@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, MapPin, Phone, Clock, ShieldCheck, Lock } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface FooterProps {
   onNavigateToSection: (sectionId: string) => void;
@@ -10,17 +11,37 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  onNavigateToSection,
   setCurrentView,
   onOpenBooking,
-  user,
-  onOpenLogin
+  onOpenLogin,
+  onNavigateToSection,
+  user
 }) => {
+  const handleHomeClick = () => {
+    setCurrentView('home');
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+  };
+
+  const handleDashboardClick = (view: 'garage' | 'my-services') => {
+    if (user) {
+      setCurrentView(view);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      onOpenLogin();
+    }
+  };
+
   return (
     <footer className="bg-[#060608] text-zinc-400 border-t border-[#222230] pt-16 pb-24 sm:pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8"
+        >
 
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">
@@ -75,10 +96,10 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-widest font-display">Customer Navigation</h4>
             <ul className="space-y-2 text-xs">
-              <li><button onClick={() => setCurrentView('home')} className="hover:text-[#d4af37] transition-colors">Home Page</button></li>
+              <li><button onClick={handleHomeClick} className="hover:text-[#d4af37] transition-colors">Home Page</button></li>
               <li>
                 <button
-                  onClick={() => user ? setCurrentView('garage') : onOpenLogin()}
+                  onClick={() => handleDashboardClick('garage')}
                   className="hover:text-[#d4af37] transition-colors"
                 >
                   My Garage
@@ -86,7 +107,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
-                  onClick={() => user ? setCurrentView('my-services') : onOpenLogin()}
+                  onClick={() => handleDashboardClick('my-services')}
                   className="hover:text-[#d4af37] transition-colors"
                 >
                   My Services
@@ -117,7 +138,7 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-        </div>
+        </motion.div>
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-[#222230] flex flex-col sm:flex-row items-center justify-between text-[10px] uppercase tracking-widest text-zinc-400 gap-4">

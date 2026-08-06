@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { ServiceItem, ServiceCategory } from '../types';
 import { ShieldCheck, Clock, Award, CheckCircle2, Sparkles, ArrowRight, X, ChevronRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { SpotlightCard } from './SpotlightCard';
+import { TiltCard } from './TiltCard';
 
 interface ServicesSectionProps {
   services: ServiceItem[];
@@ -60,88 +63,97 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ services, onOp
 
         {/* Services Cards Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredServices.map((service) => (
-            <div
+          {filteredServices.map((service, idx) => (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, delay: idx * 0.1 }}
               key={service.id}
-              className="bg-[#121218] border border-[#262636] rounded-sm overflow-hidden hover:border-[#d4af37]/50 transition-all duration-300 flex flex-col group hover:-translate-y-1 shadow-2xl"
+              className="group rounded-sm overflow-hidden flex flex-col transition-all duration-300 relative cursor-pointer"
+              onClick={() => setSelectedServiceModal(service)}
             >
-              {/* Service Image Header */}
-              <div className="relative h-52 overflow-hidden">
-                <img
-                  src={service.image}
-                  alt={service.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#121218] via-transparent to-transparent" />
+              <TiltCard>
+                <SpotlightCard className="h-full bg-[#121218] border border-[#262636] hover:border-[#d4af37]/40 flex flex-col hover:shadow-2xl hover:shadow-[#d4af37]/5 transition-all duration-300" spotlightColor="rgba(212, 175, 55, 0.15)">
+                {/* Service Image Header */}
+                <div className="relative h-52 overflow-hidden w-full">
+                  <img
+                    src={service.image}
+                    alt={service.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#121218] via-transparent to-transparent" />
 
-                {service.popular && (
-                  <span className="absolute top-3 right-3 bg-[#d4af37] text-black px-2.5 py-1 text-[9px] font-black uppercase tracking-widest shadow-lg rounded-sm">
-                    Most Requested
-                  </span>
-                )}
+                  {service.popular && (
+                    <span className="absolute top-3 right-3 bg-[#d4af37] text-black px-2.5 py-1 text-[9px] font-black uppercase tracking-widest shadow-lg rounded-sm">
+                      Most Requested
+                    </span>
+                  )}
 
-                <div className="absolute bottom-3 left-3 right-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 text-[10px] uppercase tracking-wider">
-                  <span className="bg-[#08080a] text-[#d4af37] px-2.5 py-1 border border-[#d4af37]/40 font-semibold flex items-start gap-1.5 rounded-sm max-w-full">
-                    <Clock className="w-3 h-3 shrink-0 mt-0.5" />
-                    <span className="break-words text-left">{service.duration}</span>
-                  </span>
-                  <span className="bg-[#08080a] text-zinc-200 px-2.5 py-1 border border-[#262636] font-medium flex items-start gap-1.5 rounded-sm max-w-full text-left">
-                    <ShieldCheck className="w-3 h-3 text-[#d4af37] shrink-0 mt-0.5" />
-                    <span className="break-words text-left">{service.warranty}</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-base font-bold text-white uppercase tracking-wider font-display group-hover:text-[#d4af37] transition-colors">
-                    {service.name}
-                  </h3>
-                  <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
-                    {service.shortDescription}
-                  </p>
-                </div>
-
-                {/* Core Features List */}
-                <div className="space-y-2 pt-2 border-t border-[#262636] text-xs text-zinc-300 font-medium">
-                  {service.features.slice(0, 3).map((feat, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#d4af37] flex-shrink-0" />
-                      <span className="truncate">{feat}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Price & Action Buttons */}
-                <div className="pt-4 border-t border-[#262636] flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[9px] text-zinc-400 uppercase tracking-widest font-semibold">Starting From</div>
-                    <div className="text-xl font-bold text-[#d4af37] font-display">
-                      ₹{service.startingPrice}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setSelectedServiceModal(service)}
-                      className="bg-[#181822] hover:bg-[#20202c] border border-[#2a2a3a] text-zinc-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-sm"
-                      title="View Process Steps"
-                    >
-                      Details
-                    </button>
-
-                    <button
-                      onClick={() => onOpenBooking(service.id)}
-                      className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 transition-all rounded-sm shadow-md"
-                    >
-                      Book <ChevronRight className="w-3 h-3" />
-                    </button>
+                  <div className="absolute bottom-3 left-3 right-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 text-[10px] uppercase tracking-wider">
+                    <span className="bg-[#08080a] text-[#d4af37] px-2.5 py-1 border border-[#d4af37]/40 font-semibold flex items-start gap-1.5 rounded-sm max-w-full">
+                      <Clock className="w-3 h-3 shrink-0 mt-0.5" />
+                      <span className="break-words text-left">{service.duration}</span>
+                    </span>
+                    <span className="bg-[#08080a] text-zinc-200 px-2.5 py-1 border border-[#262636] font-medium flex items-start gap-1.5 rounded-sm max-w-full text-left">
+                      <ShieldCheck className="w-3 h-3 text-[#d4af37] shrink-0 mt-0.5" />
+                      <span className="break-words text-left">{service.warranty}</span>
+                    </span>
                   </div>
                 </div>
 
-              </div>
-            </div>
+                {/* Card Body */}
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-base font-bold text-white uppercase tracking-wider font-display group-hover:text-[#d4af37] transition-colors">
+                      {service.name}
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
+                      {service.shortDescription}
+                    </p>
+                  </div>
+
+                  {/* Core Features List */}
+                  <div className="space-y-2 pt-2 border-t border-[#262636] text-xs text-zinc-300 font-medium">
+                    {service.features.slice(0, 3).map((feat, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#d4af37] flex-shrink-0" />
+                        <span className="truncate">{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Price & Action Buttons */}
+                  <div className="pt-4 border-t border-[#262636] flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[9px] text-zinc-400 uppercase tracking-widest font-semibold">Starting From</div>
+                      <div className="text-xl font-bold text-[#d4af37] font-display">
+                        ₹{service.startingPrice}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedServiceModal(service); }}
+                        className="bg-[#181822] hover:bg-[#20202c] border border-[#2a2a3a] text-zinc-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-sm z-10 relative"
+                        title="View Process Steps"
+                      >
+                        Details
+                      </button>
+
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onOpenBooking(service.id); }}
+                        className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 transition-all rounded-sm shadow-md z-10 relative"
+                      >
+                        Book <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+                </SpotlightCard>
+              </TiltCard>
+            </motion.div>
           ))}
         </div>
 
