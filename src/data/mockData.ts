@@ -304,8 +304,8 @@ export const BEFORE_AFTER_GALLERY = [
     serviceProvided: '2-Stage Machine Jewel Polishing & 10H Ceramic Coat',
     improvementStats: '98% Swirl Mark Elimination',
     vehicle: '2023 BMW 3 Series',
-    beforeImage: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80',
-    afterImage: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1200&q=80'
+    beforeImage: '/images/gallery/bmw-dirty.png',
+    afterImage: '/images/gallery/bmw-clean.png'
   },
   {
     id: 'gal-2',

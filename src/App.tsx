@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { TrustSection } from './components/TrustSection';
@@ -8,8 +8,8 @@ import { AboutAndContactSection } from './components/AboutAndContactSection';
 import { BookingModal } from './components/BookingModal';
 import { LoginModal } from './components/LoginModal';
 import { CustomerDashboard } from './components/CustomerDashboard';
-import { AdminDashboard } from './components/AdminDashboard';
-import { AdminLogin } from './components/AdminLogin';
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const AdminLogin = lazy(() => import('./components/AdminLogin').then(module => ({ default: module.AdminLogin })));
 import { MobileStickyBookingBar } from './components/MobileStickyBookingBar';
 import { Footer } from './components/Footer';
 import { PageLoader } from './components/PageLoader';
@@ -29,11 +29,25 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
   </motion.div>
 );
 
-import { INITIAL_BOOKINGS, SERVICES_DATA, INITIAL_CUSTOMER_CARS } from './data/mockData';
-import { ServiceBooking, CustomerCar, ServiceItem } from './types';
+import { SERVICES_DATA, INITIAL_CUSTOMER_CARS } from './data/mockData';
+import { getMe } from './api/auth';
+import { ServiceItem, CustomerCar, ServiceBooking } from './types';
+import { BookingResponse, getBookings, cancelBooking } from './api/bookings';
+import { getServices } from './api/services';
+import { getVehicles } from './api/vehicles';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'garage' | 'my-services' | 'admin-login' | 'admin-dashboard'>('home');
+  const getInitialView = () => {
+    if (typeof window === 'undefined') return 'home';
+    const path = window.location.pathname;
+    if (path === '/my-garage') return 'garage';
+    if (path === '/my-services') return 'my-services';
+    if (path === '/admin/login') return 'admin-login';
+    if (path === '/admin/dashboard') return 'admin-dashboard';
+    return 'home';
+  };
+
+  const [currentView, setCurrentView] = useState<'home' | 'garage' | 'my-services' | 'admin-login' | 'admin-dashboard'>(getInitialView);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAppLoaded, setIsAppLoaded] = useState(false);
@@ -60,13 +74,118 @@ export default function App() {
   const [preselectedCar, setPreselectedCar] = useState<CustomerCar | undefined>(undefined);
 
   // Global Bookings State
-  const [bookings, setBookings] = useState<ServiceBooking[]>(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState<any[]>([]);
 
   // Global Cars State
-  const [cars, setCars] = useState<CustomerCar[]>(INITIAL_CUSTOMER_CARS);
+  const [cars, setCars] = useState<CustomerCar[]>([]);
 
   // Global Services State
   const [services, setServices] = useState<ServiceItem[]>(SERVICES_DATA);
+
+  const loadCars = async () => {
+    try {
+      const data = await getVehicles();
+      const formattedCars: CustomerCar[] = data.map(v => ({
+        id: v.id,
+        make: v.make,
+        model: v.model,
+        licensePlate: v.registration_number,
+        year: v.year || new Date().getFullYear(),
+        color: v.color || 'Black',
+        image: v.image_url && !v.image_url.includes('unsplash.com') ? v.image_url : '',
+        lastServiceDate: 'Newly Added',
+        nextRecommendedService: 'Basic Wash & Detailing',
+        paintConditionScore: 9.2
+      }));
+      setCars(formattedCars);
+    } catch (error) {
+      console.error('Failed to load garage vehicles', error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      loadBookings();
+      loadCars();
+      
+      // Auto-sync profile to fix any stale localStorage data (e.g. missing names)
+      getMe().then(res => {
+        if (res?.profile && res.profile.name !== currentUser.name) {
+          const updatedUser = { ...currentUser, name: res.profile.name };
+          setCurrentUser(updatedUser);
+          localStorage.setItem('user_session', JSON.stringify(updatedUser));
+        }
+      }).catch(err => console.error('Failed to sync user profile:', err));
+    } else {
+      setBookings([]);
+      setCars([]); // Clear cars if not logged in
+    }
+  }, []); // Only run once on mount or when auth state drastically changes, but we'll stick to mount to prevent infinite loops, wait, we need it on currentUser change? No, just once or when currentUser is set. Let's just run it when currentUser.emailOrPhone changes or on mount.
+  
+  useEffect(() => {
+    if (currentUser) {
+      loadBookings();
+      loadCars();
+    } else {
+      setBookings([]);
+      setCars([]);
+    }
+  }, [currentUser?.emailOrPhone]);
+
+  const loadBookings = async () => {
+    try {
+      const data = await getBookings();
+      const mappedBookings = data.map((b: any) => ({
+        id: b.id,
+        bookingNumber: b.booking_number || b.bookingNumber,
+        customerName: currentUser?.name || 'Customer',
+        customerPhone: currentUser?.emailOrPhone || '',
+        customerEmail: currentUser?.emailOrPhone || '',
+        serviceType: 'studio',
+        serviceId: b.services?.[0]?.id || '',
+        serviceName: (b.services || []).map((s: any) => s?.name).filter(Boolean).join(', '),
+        carDetails: b.vehicle || {},
+        addOns: [],
+        date: b.date,
+        timeSlot: b.time_slot || b.timeSlot,
+        totalPrice: b.total_amount || b.totalPrice,
+        status: b.status,
+        assignedBay: 'Clean Room Bay #1',
+        createdAt: b.created_at || b.createdAt
+      }));
+      setBookings(mappedBookings);
+    } catch (error) {
+      console.error('Failed to load bookings', error);
+    }
+  };
+  
+  useEffect(() => {
+    const fetchLiveServices = async () => {
+      try {
+        const liveServices = await getServices();
+        if (liveServices && liveServices.length > 0) {
+          const formattedServices: ServiceItem[] = liveServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            category: (s.category.toLowerCase() === 'cleaning' ? 'detailing' : s.category.toLowerCase() === 'protection' ? 'coating' : 'modification') as any,
+            startingPrice: s.price,
+            shortDescription: s.description || 'Premium auto care service.',
+            fullDescription: s.description || 'Experience the best premium auto care service for your vehicle.',
+            duration: '2-4 hours',
+            warranty: 'None',
+            features: ['Premium Materials', 'Expert Technicians', 'Quality Guarantee'],
+            processSteps: [],
+            popular: s.name.includes('Ceramic') || s.name.includes('Detailing'),
+            image: s.image_url || 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?auto=format&fit=crop&w=800&q=80'
+          }));
+          setServices(formattedServices);
+        }
+      } catch (error) {
+        console.error('Failed to fetch services. Using fallback mock data.', error);
+      }
+    };
+    fetchLiveServices();
+  }, []);
 
   // Protected Routes Guard Effect: Redirect immediately to home if on private view without auth
   useEffect(() => {
@@ -78,22 +197,32 @@ export default function App() {
     }
   }, [currentUser, currentView]);
 
-  // Handle browser back/forward buttons to prevent returning to protected pages after logout
+  // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
+      const path = window.location.pathname;
+      let nextView: 'home' | 'garage' | 'my-services' | 'admin-login' | 'admin-dashboard' = 'home';
+      
+      if (path === '/my-garage') nextView = 'garage';
+      else if (path === '/my-services') nextView = 'my-services';
+      else if (path === '/admin/login') nextView = 'admin-login';
+      else if (path === '/admin/dashboard') nextView = 'admin-dashboard';
+
       const saved = localStorage.getItem('user_session');
-      if (!saved && (currentView === 'garage' || currentView === 'my-services')) {
+      if (!saved && (nextView === 'garage' || nextView === 'my-services')) {
         setCurrentUser(null);
         setCurrentView('home');
         if (typeof window !== 'undefined') {
           window.history.replaceState({ view: 'home' }, '', '/');
         }
+      } else {
+        setCurrentView(nextView);
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentView]);
+  }, []);
 
   const handleGuardedViewNavigation = (view: 'home' | 'garage' | 'my-services' | 'admin-login' | 'admin-dashboard') => {
     if ((view === 'garage' || view === 'my-services') && !currentUser) {
@@ -144,14 +273,20 @@ export default function App() {
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, date: newDate, timeSlot: newSlot } : b));
   };
 
-  const handleDeleteBooking = (bookingId: string) => {
-    setBookings(bookings.filter(b => b.id !== bookingId));
-    toast('Booking has been removed successfully.', 'info');
+  const handleDeleteBooking = async (bookingId: string) => {
+    try {
+      await cancelBooking(bookingId);
+      setBookings(bookings.filter(b => b.id !== bookingId));
+      toast('Booking has been cancelled successfully.', 'info');
+    } catch (error) {
+      console.error('Failed to cancel booking', error);
+      toast('Failed to cancel booking', 'error');
+    }
   };
 
   const handleNavigateToSection = (sectionId: string) => {
     if (currentView !== 'home') {
-      setCurrentView('home');
+      handleGuardedViewNavigation('home');
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
@@ -166,19 +301,23 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = (user: { name: string; emailOrPhone: string }) => {
+  const handleLoginSuccess = (user: { name: string; emailOrPhone: string }, token: string) => {
     try {
       localStorage.setItem('user_session', JSON.stringify(user));
-      localStorage.setItem('jwt_token', `token_${Date.now()}_${Math.random().toString(36).substring(2)}`);
+      localStorage.setItem('jwt_token', token);
     } catch (err) {
       console.error('Failed to store session in localStorage:', err);
     }
     setCurrentUser(user);
     setIsLoginOpen(false);
+    
+    // Set view directly instead of using handleGuardedViewNavigation 
+    // to avoid stale closure (currentUser === null) triggering the auth guard
     setCurrentView('garage');
     if (typeof window !== 'undefined') {
-      window.history.pushState({ view: 'garage' }, '', '/dashboard');
+      window.history.pushState({ view: 'garage' }, '', '/my-garage');
     }
+    
     toast(`Welcome back, ${user.name}!`, 'info');
   };
 
@@ -254,6 +393,7 @@ export default function App() {
                     onOpenBooking={(serviceId, car) => handleOpenBooking(serviceId, car)}
                     onDeleteBooking={handleDeleteBooking}
                     defaultSubTab="garage"
+                    onTabChange={(tab) => handleGuardedViewNavigation(tab === 'garage' ? 'garage' : 'my-services')}
                     userName={currentUser.name}
                     cars={cars}
                     setCars={setCars}
@@ -268,6 +408,7 @@ export default function App() {
                     onOpenBooking={(serviceId, car) => handleOpenBooking(serviceId, car)}
                     onDeleteBooking={handleDeleteBooking}
                     defaultSubTab="services"
+                    onTabChange={(tab) => handleGuardedViewNavigation(tab === 'garage' ? 'garage' : 'my-services')}
                     userName={currentUser.name}
                     cars={cars}
                     setCars={setCars}
@@ -277,27 +418,32 @@ export default function App() {
 
               {currentView === 'admin-login' && (
                 <PageTransition key="admin-login">
-                  <AdminLogin
-                    onAdminLoginSuccess={() => setCurrentView('admin-dashboard')}
-                    onBackToCustomer={() => setCurrentView('home')}
-                  />
+                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#090A0E] text-[#d4af37]">Loading...</div>}>
+                    <AdminLogin
+                      onAdminLoginSuccess={() => handleGuardedViewNavigation('admin-dashboard')}
+                      onBackToCustomer={() => {}} // Disabled cross-navigation
+                    />
+                  </Suspense>
                 </PageTransition>
               )}
 
               {currentView === 'admin-dashboard' && (
                 <PageTransition key="admin-dashboard">
-                  <AdminDashboard 
-                    services={services}
-                    setServices={setServices}
-                    bookings={bookings} 
-                    onUpdateBookingStatus={handleUpdateBookingStatus}
-                    onUpdateBookingSlot={handleUpdateBookingSlot}
-                    onDeleteBooking={handleDeleteBooking}
-                    onAdminLogout={() => {
-                      setCurrentUser(null);
-                      setCurrentView('home');
-                    }} 
-                  />
+                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#090A0E] text-[#d4af37]">Loading...</div>}>
+                    <AdminDashboard 
+                      services={services}
+                      setServices={setServices}
+                      bookings={bookings} 
+                      onUpdateBookingStatus={handleUpdateBookingStatus}
+                      onUpdateBookingSlot={handleUpdateBookingSlot}
+                      onDeleteBooking={handleDeleteBooking}
+                      onAdminLogout={() => {
+                        localStorage.removeItem('admin_session');
+                        localStorage.removeItem('admin_jwt_token');
+                        handleGuardedViewNavigation('admin-login');
+                      }} 
+                    />
+                  </Suspense>
                 </PageTransition>
               )}
             </AnimatePresence>
@@ -319,7 +465,11 @@ export default function App() {
             preselectedServiceId={preselectedServiceId}
             preselectedCar={preselectedCar}
             onAddBookingToState={handleAddBookingToState}
-            onNavigateToCustomerPortal={() => handleNavigateToSection('my-services')}
+            onNavigateToCustomerPortal={() => {
+              setIsBookingOpen(false);
+              handleGuardedViewNavigation('my-services');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             services={services}
             cars={cars}
           />

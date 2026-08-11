@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Lock, ShieldCheck, ArrowRight, Sparkles, UserCheck } from 'lucide-react';
+import { Lock, ShieldCheck, ArrowRight, Sparkles, UserCheck, KeyRound, Mail, User, Phone } from 'lucide-react';
+import { adminLogin, registerAdmin } from '../api/admin';
 
 interface AdminLoginProps {
   onAdminLoginSuccess: () => void;
@@ -10,25 +11,56 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
   onAdminLoginSuccess,
   onBackToCustomer
 }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [view, setView] = useState<'login' | 'register'>('login');
+  
+  // Form States
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('+91 ');
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      if (username.trim().toLowerCase() === 'admin' && password === 'admin123') {
-        setLoading(false);
-        onAdminLoginSuccess();
-      } else {
-        setLoading(false);
-        setError('Invalid admin credentials. Use admin / admin123');
-      }
-    }, 600);
+    try {
+      const data = await adminLogin(email, password);
+      localStorage.setItem('admin_session', JSON.stringify(data.session));
+      localStorage.setItem('admin_jwt_token', data.session.access_token);
+      onAdminLoginSuccess();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await registerAdmin({
+        name,
+        email,
+        phone,
+        password,
+        inviteCode
+      });
+      localStorage.setItem('admin_session', JSON.stringify(data.session));
+      localStorage.setItem('admin_jwt_token', data.session.access_token);
+      onAdminLoginSuccess();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,7 +80,8 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
             Admin <span className="font-bold text-[#d4af37]">Studio Portal</span>
           </h2>
           <p className="text-xs text-zinc-400 uppercase tracking-widest">
-            Enter administrator credentials to manage studio operations
+            {view === 'login' && 'Enter administrator credentials'}
+            {view === 'register' && 'Register a new administrator account'}
           </p>
         </div>
 
@@ -58,58 +91,121 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1.5">
-              Admin Username
-            </label>
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-              className="w-full bg-[#181822] border border-[#2a2a3a] p-3 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
-            />
+        {successMsg && (
+          <div className="p-3 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs text-center font-medium rounded-sm">
+            {successMsg}
           </div>
+        )}
 
-          <div>
-            <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1.5">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-[#181822] border border-[#2a2a3a] p-3 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
-            />
-          </div>
+        {/* LOGIN VIEW */}
+        {view === 'login' && (
+          <form onSubmit={handleLogin} className="space-y-4 text-xs">
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                <Mail className="w-3 h-3" /> Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@darpex.com"
+                className="w-full bg-[#181822] border border-[#2a2a3a] p-3 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
 
-          <div className="p-3 bg-[#181822] border border-[#2a2a3a] text-[11px] text-zinc-400 space-y-1">
-            <div className="text-[#d4af37] font-bold uppercase tracking-wider">Demo Credentials:</div>
-            <div>Username: <strong className="text-white">admin</strong></div>
-            <div>Password: <strong className="text-white">admin123</strong></div>
-          </div>
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                <KeyRound className="w-3 h-3" /> Password
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-[#181822] border border-[#2a2a3a] p-3 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#d4af37] hover:bg-[#e5c158] text-black py-3.5 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors shadow-xl"
-          >
-            {loading ? (
-              <span>Authenticating...</span>
-            ) : (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                <span>Login to Admin Console</span>
-              </>
-            )}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#d4af37] hover:bg-[#e5c158] text-black py-3.5 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors shadow-xl mt-4"
+            >
+              {loading ? 'Authenticating...' : <><ShieldCheck className="w-4 h-4" /> Login to Admin Console</>}
+            </button>
+            
+            <div className="text-center mt-4">
+              <button 
+                type="button" 
+                onClick={() => { setView('register'); setError(''); setEmail(''); setPassword(''); }}
+                className="text-[10px] text-zinc-400 hover:text-[#d4af37] uppercase tracking-widest"
+              >
+                Create new admin account
+              </button>
+            </div>
+          </form>
+        )}
 
-        <div className="pt-2 border-t border-[#262636] text-center">
+        {/* REGISTER VIEW */}
+        {view === 'register' && (
+          <form onSubmit={handleRegister} className="space-y-3 text-xs">
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">Full Name</label>
+              <input
+                type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                className="w-full bg-[#181822] border border-[#2a2a3a] p-2.5 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">Email Address</label>
+              <input
+                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-[#181822] border border-[#2a2a3a] p-2.5 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">Phone Number</label>
+              <input
+                type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1234567890"
+                className="w-full bg-[#181822] border border-[#2a2a3a] p-2.5 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">Password</label>
+              <input
+                type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[#181822] border border-[#2a2a3a] p-2.5 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-[#d4af37] uppercase tracking-widest mb-1">Secret Invite Code</label>
+              <input
+                type="password" required value={inviteCode} onChange={(e) => setInviteCode(e.target.value)}
+                className="w-full bg-[#181822] border border-[#d4af37]/30 p-2.5 text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+              />
+            </div>
+
+            <button
+              type="submit" disabled={loading}
+              className="w-full bg-[#d4af37] hover:bg-[#e5c158] text-black py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mt-4"
+            >
+              {loading ? 'Registering...' : <><UserCheck className="w-4 h-4" /> Register & Access Portal</>}
+            </button>
+            
+            <div className="text-center mt-3">
+              <button 
+                type="button" onClick={() => { setView('login'); setError(''); }}
+                className="text-[10px] text-zinc-400 hover:text-[#d4af37] uppercase tracking-widest"
+              >
+                Back to login
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="pt-4 border-t border-[#262636] text-center">
           <button
             type="button"
             onClick={onBackToCustomer}

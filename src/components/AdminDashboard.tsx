@@ -7,23 +7,29 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+import { 
+  getAdminBookings, 
+  getAdminCustomers, 
+  updateAdminBookingStatus, 
+  updateAdminBookingSlot, 
+  deleteAdminBooking,
+  createAdminService,
+  updateAdminService,
+  deleteAdminService,
+  uploadAdminImage,
+  verifyAdminBookingPayment,
+  AdminCustomer 
+} from '../api/admin';
+
 interface AdminDashboardProps {
   services: ServiceItem[];
   setServices: React.Dispatch<React.SetStateAction<ServiceItem[]>>;
-  bookings: ServiceBooking[];
-  onUpdateBookingStatus: (bookingId: string, newStatus: ServiceBooking['status']) => void;
-  onUpdateBookingSlot?: (bookingId: string, newDate: string, newSlot: string) => void;
-  onDeleteBooking?: (bookingId: string) => void;
   onAdminLogout: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   services,
   setServices,
-  bookings,
-  onUpdateBookingStatus,
-  onUpdateBookingSlot,
-  onDeleteBooking,
   onAdminLogout
 }) => {
   const [bays, setBays] = useState<StudioBay[]>(STUDIO_BAYS);
@@ -39,121 +45,234 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newServiceCategory, setNewServiceCategory] = useState<ServiceItem['category']>('detailing');
   const [newServicePrice, setNewServicePrice] = useState<number>(2999);
   const [newServiceDesc, setNewServiceDesc] = useState('');
+  const [newServiceImageFile, setNewServiceImageFile] = useState<File | null>(null);
 
   // Editing Slot Modal State
   const [editingSlotBookingId, setEditingSlotBookingId] = useState<string | null>(null);
   const [slotDateInput, setSlotDateInput] = useState('');
   const [slotTimeInput, setSlotTimeInput] = useState('3:00 PM');
 
-  // Payment Verification State
-  const [verifiedTxnIds, setVerifiedTxnIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('verifiedTxnIds');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+  // Remove localStorage verifiedTxnIds
 
-  // Customers data
-  const [customers] = useState([
-    {
-      id: 'cust-1',
-      name: 'Alexander Vance',
-      phone: '+91 98765 43210',
-      email: 'alex.vance@vanceholdings.com',
-      registeredCars: INITIAL_CUSTOMER_CARS,
-      totalSpent: 18498,
-      status: 'VIP Executive Member'
-    },
-    {
-      id: 'cust-2',
-      name: 'Sophia Laurent',
-      phone: '+91 98111 22334',
-      email: 'sophia.laurent@gmail.com',
-      registeredCars: [INITIAL_CUSTOMER_CARS[1]],
-      totalSpent: 8499,
-      status: 'Standard Member'
+  const [adminBookings, setAdminBookings] = useState<ServiceBooking[]>([]);
+  const [customers, setCustomers] = useState<AdminCustomer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    const loadAdminData = async () => {
+      try {
+        const [bookingsData, customersData] = await Promise.all([
+          getAdminBookings(),
+          getAdminCustomers()
+        ]);
+        
+        const mappedBookings: ServiceBooking[] = bookingsData.map((b: any) => ({
+          id: b.id,
+          bookingNumber: b.bookingNumber,
+          customerName: b.customerName,
+          customerPhone: b.customerPhone,
+          customerEmail: b.customerEmail,
+          serviceType: 'studio',
+          serviceId: b.services?.[0]?.id || '',
+          serviceName: (b.services || []).map((s: any) => s?.name).filter(Boolean).join(', '),
+          carDetails: b.vehicle || {},
+          addOns: [],
+          date: b.date,
+          timeSlot: b.timeSlot,
+          totalPrice: b.totalPrice,
+          status: b.status,
+          assignedBay: 'Clean Room Bay #1',
+          createdAt: b.createdAt
+        }));
+
+        setAdminBookings(mappedBookings);
+        const mappedCustomers = customersData.map((c: any) => ({
+          ...c,
+          registeredCars: (c.registeredCars || []).map((v: any) => ({
+            id: v.id,
+            make: v.make,
+            model: v.model,
+            licensePlate: v.registration_number,
+            year: v.year || new Date().getFullYear(),
+            color: v.color || 'Black',
+            image: v.image_url && !v.image_url.includes('unsplash.com') ? v.image_url : '',
+            lastServiceDate: 'Newly Added',
+            nextRecommendedService: 'Basic Wash & Detailing',
+            paintConditionScore: 9.2
+          }))
+        }));
+        
+        setCustomers(mappedCustomers);
+      } catch (error) {
+        console.error('Failed to load admin data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAdminData();
+  }, []);
+
+  const handleUpdateBookingStatusLocal = async (bookingId: string, newStatus: ServiceBooking['status']) => {
+    try {
+      await updateAdminBookingStatus(bookingId, newStatus);
+      setAdminBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+    } catch (error) {
+      console.error('Failed to update status', error);
     }
-  ]);
+  };
+
+  const handleDeleteBookingLocal = async (bookingId: string) => {
+    if (confirm('Are you sure you want to permanently delete this booking?')) {
+      try {
+        await deleteAdminBooking(bookingId);
+        setAdminBookings(prev => prev.filter(b => b.id !== bookingId));
+      } catch (error) {
+        console.error('Failed to delete booking', error);
+      }
+    }
+  };
+
+  const handleUpdateBookingSlotLocal = async (bookingId: string, newDate: string, newSlot: string) => {
+    try {
+      await updateAdminBookingSlot(bookingId, newDate, newSlot);
+      setAdminBookings(prev => prev.map(b => b.id === bookingId ? { ...b, date: newDate, timeSlot: newSlot } : b));
+      setEditingSlotBookingId(null);
+    } catch (error) {
+      console.error('Failed to update slot', error);
+    }
+  };
 
   // Analytics Metrics
-  const totalBookingsCount = bookings.length;
-  const todayAppointmentsCount = bookings.filter(b => b.date.includes('Today') || b.date.includes('12 August') || b.date.includes('2026')).length;
+  const totalBookingsCount = adminBookings.length;
+  const todayAppointmentsCount = adminBookings.filter(b => b.date.includes('Today') || b.date.includes('12 August') || b.date.includes('2026')).length;
   const totalCustomersCount = customers.length;
   const totalVehiclesCount = customers.reduce((sum, c) => sum + c.registeredCars.length, 0);
-  const totalRevenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0) + 42500;
-  const pendingPaymentsCount = bookings.filter(b => b.status === 'Pending' || !verifiedTxnIds.includes(b.id)).length;
+  const totalRevenue = adminBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+  const pendingPaymentsCount = adminBookings.filter(b => b.paymentStatus !== 'Verified').length;
 
   const revenueData = [
-    { month: 'Mar', revenue: 42500 },
-    { month: 'Apr', revenue: 51200 },
-    { month: 'May', revenue: 64800 },
-    { month: 'Jun', revenue: 78900 },
-    { month: 'Jul', revenue: 89400 },
+    { month: 'Mar', revenue: 0 },
+    { month: 'Apr', revenue: 0 },
+    { month: 'May', revenue: 0 },
+    { month: 'Jun', revenue: 0 },
+    { month: 'Jul', revenue: 0 },
     { month: 'Aug', revenue: totalRevenue },
   ];
 
   const serviceDistributionData = [
-    { name: 'Ceramic Coating 10H', value: 42, color: '#d4af37' },
-    { name: 'PPF Protection', value: 28, color: '#38BDF8' },
-    { name: 'Interior Steam', value: 18, color: '#34D399' },
-    { name: 'Custom Accessories', value: 12, color: '#F472B6' },
+    { name: 'Ceramic Coating 10H', value: 0, color: '#d4af37' },
+    { name: 'PPF Protection', value: 0, color: '#38BDF8' },
+    { name: 'Interior Steam', value: 0, color: '#34D399' },
+    { name: 'Custom Accessories', value: 0, color: '#F472B6' },
   ];
 
   // Service Management Handlers
-  const handleEditPrice = (serviceId: string, currentPrice: number) => {
-    setEditingServiceId(serviceId);
-    setEditedPrice(currentPrice);
+  const handleEditServiceClick = (svc: ServiceItem) => {
+    setEditingServiceId(svc.id);
+    setNewServiceName(svc.name);
+    setNewServiceCategory(svc.category);
+    setNewServicePrice(svc.startingPrice);
+    setNewServiceDesc(svc.shortDescription);
+    setNewServiceImageFile(null);
+    setIsAddingService(true);
   };
 
-  const handleSavePrice = (serviceId: string) => {
-    setServices(services.map(s => s.id === serviceId ? { ...s, startingPrice: editedPrice } : s));
+  const handleCancelServiceForm = () => {
+    setIsAddingService(false);
     setEditingServiceId(null);
+    setNewServiceName('');
+    setNewServiceDesc('');
+    setNewServiceImageFile(null);
+    setNewServicePrice(2999);
   };
 
-  const handleRemoveService = (serviceId: string) => {
+  const handleRemoveService = async (serviceId: string) => {
     if (confirm('Are you sure you want to remove this service?')) {
-      setServices(services.filter(s => s.id !== serviceId));
+      try {
+        await deleteAdminService(serviceId);
+        setServices(services.filter(s => s.id !== serviceId));
+      } catch (error) {
+        console.error('Failed to remove service', error);
+      }
     }
   };
 
-  const handleAddServiceSubmit = (e: React.FormEvent) => {
+  const handleAddServiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName) return;
 
-    const newService: ServiceItem = {
-      id: `service-${Date.now()}`,
-      name: newServiceName,
-      category: newServiceCategory,
-      shortDescription: newServiceDesc || 'High precision studio vehicle treatment.',
-      fullDescription: newServiceDesc || 'Comprehensive premium detailing and restoration service.',
-      startingPrice: newServicePrice,
-      duration: '2 Hours',
-      warranty: '1-Year Assurance',
-      image: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=1200&q=80',
-      popular: false,
-      features: ['Studio Grade Products', 'Certified Technician', 'Quality Inspected'],
-      processSteps: [{ step: 1, title: 'Insepction & Prep', description: 'Decontamination.' }]
-    };
+    try {
+      let finalImageUrl: string | undefined = undefined;
+      
+      if (newServiceImageFile) {
+        const uploadResult = await uploadAdminImage(newServiceImageFile);
+        finalImageUrl = uploadResult.url;
+      }
 
-    setServices([newService, ...services]);
-    setNewServiceName('');
-    setNewServiceDesc('');
-    setIsAddingService(false);
+      if (editingServiceId) {
+        // Edit mode
+        const updatedServiceData = await updateAdminService(editingServiceId, {
+          name: newServiceName,
+          category: newServiceCategory,
+          description: newServiceDesc,
+          price: newServicePrice,
+          image_url: finalImageUrl || undefined
+        });
+
+        setServices(services.map(s => s.id === editingServiceId ? {
+          ...s,
+          name: updatedServiceData.name || s.name,
+          category: updatedServiceData.category || s.category,
+          shortDescription: updatedServiceData.description || s.shortDescription,
+          startingPrice: updatedServiceData.price || s.startingPrice,
+          image: updatedServiceData.image_url || s.image
+        } : s));
+      } else {
+        // Create mode
+        const createdServiceData = await createAdminService({
+          name: newServiceName,
+          category: newServiceCategory,
+          description: newServiceDesc,
+          price: newServicePrice,
+          image_url: finalImageUrl || undefined
+        });
+
+        const newService: ServiceItem = {
+          id: createdServiceData.id,
+          name: createdServiceData.name,
+          category: createdServiceData.category.toLowerCase().includes('clean') ? 'interior' : 'coating',
+          shortDescription: createdServiceData.description || 'High precision studio vehicle treatment.',
+          fullDescription: createdServiceData.description || 'Comprehensive premium detailing and restoration service.',
+          startingPrice: createdServiceData.price,
+          duration: '2 Hours',
+          warranty: '1-Year Assurance',
+          image: createdServiceData.image_url || 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=1200&q=80',
+          popular: false,
+          features: ['Studio Grade Products', 'Certified Technician', 'Quality Inspected'],
+          processSteps: [{ step: 1, title: 'Insepction & Prep', description: 'Decontamination.' }]
+        };
+
+        setServices([...services, newService]);
+      }
+
+      handleCancelServiceForm();
+    } catch (error) {
+      console.error('Failed to save service', error);
+    }
   };
 
-  const handleVerifyPayment = (bookingId: string) => {
-    if (!verifiedTxnIds.includes(bookingId)) {
-      const newVerified = [...verifiedTxnIds, bookingId];
-      setVerifiedTxnIds(newVerified);
-      localStorage.setItem('verifiedTxnIds', JSON.stringify(newVerified));
+  const handleVerifyPayment = async (bookingId: string) => {
+    try {
+      await verifyAdminBookingPayment(bookingId);
+      setAdminBookings(prev => prev.map(b => b.id === bookingId ? { ...b, paymentStatus: 'Verified' } : b));
+    } catch (error) {
+      console.error('Failed to verify payment', error);
     }
   };
 
   const handleSaveSlotChange = (bookingId: string) => {
-    if (onUpdateBookingSlot && slotDateInput) {
-      onUpdateBookingSlot(bookingId, slotDateInput, slotTimeInput);
+    if (slotDateInput) {
+      handleUpdateBookingSlotLocal(bookingId, slotDateInput, slotTimeInput);
     }
     setEditingSlotBookingId(null);
   };
@@ -246,7 +365,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 : 'bg-[#121218] text-zinc-400 hover:text-white border border-[#262636]'
             }`}
           >
-            <Calendar className="w-4 h-4" /> Bookings ({bookings.length})
+            <Calendar className="w-4 h-4" /> Bookings ({adminBookings.length})
           </button>
 
           <button
@@ -361,7 +480,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <div className="space-y-4">
-              {bookings.map((booking) => (
+              {isLoading ? <div className="text-white p-4">Loading bookings...</div> : adminBookings.map((booking) => (
                 <div key={booking.id} className="bg-[#121218] border border-[#262636] p-6 rounded-sm space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#262636] pb-3">
                     <div>
@@ -378,7 +497,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <div className="text-right">
                       <div className="text-2xl font-bold text-[#d4af37] font-display">₹{booking.totalPrice}</div>
                       <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest block mt-0.5">
-                        {verifiedTxnIds.includes(booking.id) ? 'Payment Verified' : 'QR Payment Received'}
+                        {booking.paymentStatus === 'Verified' ? 'Payment Verified' : 'QR Payment Received'}
                       </span>
                     </div>
                   </div>
@@ -413,7 +532,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </button>
 
                       <button
-                        onClick={() => onUpdateBookingStatus(booking.id, 'Confirmed')}
+                        onClick={() => handleUpdateBookingStatusLocal(booking.id, 'Confirmed')}
                         className={`px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap text-center ${
                           booking.status === 'Confirmed' ? 'bg-emerald-500 text-black font-extrabold' : 'bg-[#181822] text-zinc-300 border border-[#2a2a3a] hover:bg-[#20202c]'
                         }`}
@@ -422,7 +541,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </button>
 
                       <button
-                        onClick={() => onUpdateBookingStatus(booking.id, 'Completed')}
+                        onClick={() => handleUpdateBookingStatusLocal(booking.id, 'Completed')}
                         className={`px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap text-center ${
                           booking.status === 'Completed' ? 'bg-blue-500 text-black font-extrabold' : 'bg-[#181822] text-zinc-300 border border-[#2a2a3a] hover:bg-[#20202c]'
                         }`}
@@ -433,7 +552,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <button
                         onClick={() => {
                           if (confirm('Are you sure you want to cancel and delete this booking?')) {
-                            if (onDeleteBooking) onDeleteBooking(booking.id);
+                            handleDeleteBookingLocal(booking.id);
                           }
                         }}
                         className="px-3 py-2 sm:py-1.5 rounded-sm text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap text-center bg-[#181822] text-red-400 border border-[#2a2a3a] hover:bg-red-950/40 hover:border-red-500/50"
@@ -534,7 +653,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div className="text-xs space-y-1">
                             <h5 className="font-bold text-white uppercase font-display">{car.make} {car.model} ({car.year})</h5>
                             <p className="text-zinc-400">License Plate: <strong className="text-[#d4af37]">{car.licensePlate}</strong></p>
-                            <p className="text-zinc-400">Paint Score: <strong className="text-emerald-400">{car.paintConditionScore}/10</strong></p>
                           </div>
                         </div>
                       ))}
@@ -544,12 +662,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {/* Service History */}
                   <div className="pt-2 border-t border-[#262636]">
                     <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-2">Service History</h4>
-                    <div className="bg-[#181822] p-3 text-xs text-zinc-300 rounded-sm border border-[#262636] flex justify-between items-center">
-                      <div>
-                        <strong>Full Car Detailing & Interior Steam Sanitization</strong>
-                        <p className="text-[10px] text-zinc-400">Completed on 10 July 2026</p>
-                      </div>
-                      <span className="text-[#d4af37] font-bold">₹8,499</span>
+                    <div className="space-y-2">
+                      {cust.serviceHistory && cust.serviceHistory.length > 0 ? (
+                        cust.serviceHistory.map(history => (
+                          <div key={history.id} className="bg-[#181822] p-3 text-xs text-zinc-300 rounded-sm border border-[#262636] flex justify-between items-center">
+                            <div>
+                              <strong>{history.serviceNames.join(', ') || 'General Service'}</strong>
+                              <p className="text-[10px] text-zinc-400">Date: {history.date}</p>
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                              history.status === 'Completed' ? 'text-emerald-400' : 'text-[#d4af37]'
+                            }`}>
+                              {history.status}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">No previous service history found.</p>
+                      )}
                     </div>
                   </div>
 
@@ -568,7 +698,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </h2>
 
               <button
-                onClick={() => setIsAddingService(!isAddingService)}
+                onClick={() => {
+                  if (isAddingService) {
+                    handleCancelServiceForm();
+                  } else {
+                    setIsAddingService(true);
+                  }
+                }}
                 className="bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 py-2.5 text-xs font-bold uppercase tracking-widest flex items-center gap-2 rounded-sm transition-colors shadow-lg"
               >
                 <Plus className="w-4 h-4" />
@@ -580,7 +716,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {isAddingService && (
               <form onSubmit={handleAddServiceSubmit} className="bg-[#121218] border border-[#d4af37]/40 p-6 rounded-sm space-y-4 shadow-xl">
                 <h3 className="text-sm font-bold text-[#d4af37] uppercase tracking-widest font-display">
-                  Create New Studio Service
+                  {editingServiceId ? 'Edit Studio Service' : 'Create New Studio Service'}
                 </h3>
 
                 <div className="grid sm:grid-cols-3 gap-4 text-xs">
@@ -634,6 +770,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-300 uppercase mb-1">Image Upload (Optional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setNewServiceImageFile(e.target.files?.[0] || null)}
+                    className="w-full bg-[#181822] border border-[#2a2a3a] p-2 text-xs text-zinc-300 focus:outline-none rounded-sm file:mr-4 file:py-1 file:px-3 file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-widest file:bg-[#d4af37] file:text-black hover:file:bg-[#e5c158] cursor-pointer"
+                  />
+                </div>
+
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="submit"
@@ -655,25 +801,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {svc.category}
                       </span>
                       
-                      {/* Price Edit or Display */}
-                      {editingServiceId === svc.id ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            value={editedPrice}
-                            onChange={(e) => setEditedPrice(Number(e.target.value))}
-                            className="w-20 bg-[#0c0c10] border border-[#d4af37] p-1 text-xs text-white font-bold text-right rounded-sm"
-                          />
-                          <button
-                            onClick={() => handleSavePrice(svc.id)}
-                            className="bg-[#d4af37] text-black px-2 py-1 text-[10px] font-bold rounded-sm"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-base font-bold text-[#d4af37]">₹{svc.startingPrice}</span>
-                      )}
+                      {/* Price Display */}
+                      <span className="text-base font-bold text-[#d4af37]">₹{svc.startingPrice}</span>
                     </div>
 
                     <h4 className="text-base font-bold text-white font-display uppercase tracking-wider mt-3">{svc.name}</h4>
@@ -682,10 +811,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <div className="pt-3 border-t border-[#262636] flex items-center justify-between">
                     <button
-                      onClick={() => handleEditPrice(svc.id, svc.startingPrice)}
-                      className="text-xs text-zinc-300 hover:text-[#d4af37] flex items-center gap-1 font-bold uppercase tracking-wider"
+                      onClick={() => handleEditServiceClick(svc)}
+                      className="text-[10px] font-bold text-zinc-300 hover:text-white flex items-center gap-1 uppercase tracking-widest"
                     >
-                      <Edit2 className="w-3.5 h-3.5" /> Edit Price
+                      <Edit2 className="w-3 h-3" /> Edit Service
                     </button>
 
                     <button
@@ -709,8 +838,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </h2>
 
             <div className="space-y-4">
-              {bookings.map((booking) => {
-                const isVerified = verifiedTxnIds.includes(booking.id);
+              {adminBookings.map((booking) => {
+                const isVerified = booking.paymentStatus === 'Verified';
                 return (
                   <div key={booking.id} className="bg-[#121218] border border-[#262636] p-6 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">

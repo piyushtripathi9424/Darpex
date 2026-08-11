@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { X, Mail, Phone, Lock, ArrowRight, ShieldCheck, Sparkles, CheckCircle2, User } from 'lucide-react';
 
+import { registerUser, loginUser } from '../api/auth';
+import { useToast } from './ToastContext';
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: { name: string; emailOrPhone: string }) => void;
+  onLoginSuccess: (user: { name: string; emailOrPhone: string }, token: string) => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
@@ -12,19 +15,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onClose,
   onLoginSuccess
 }) => {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
 
-  // Name state
-  const [name, setName] = useState('Alexander Vance');
-
-  // Email state
-  const [email, setEmail] = useState('alexander@vance.com');
-  const [password, setPassword] = useState('••••••••');
+  // Form state
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   // Phone state
   const [phone, setPhone] = useState('+91 98765 43210');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setEmail('');
+      setPassword('');
+      setName('');
+      setIsLoading(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -33,18 +46,42 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setOtpSent(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginMethod === 'email') {
-      onLoginSuccess({
-        name: name.trim() || 'Alexander Vance',
-        emailOrPhone: email || 'alexander@vance.com'
-      });
-    } else {
-      onLoginSuccess({
-        name: name.trim() || 'Alexander Vance',
-        emailOrPhone: phone || '+91 98765 43210'
-      });
+    if (loginMethod === 'phone') {
+      toast('Phone login is coming soon. Please use email.', 'info');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (mode === 'register') {
+        const res = await registerUser({ email, password, name });
+        if (!res.session) {
+          toast('Account created! Please check your email to verify your account.', 'success');
+          setMode('login');
+          return;
+        }
+        onLoginSuccess({
+          name: res.user.name,
+          emailOrPhone: res.user.email
+        }, res.session.access_token);
+        toast('Registration successful! Welcome.', 'success');
+      } else {
+        const res = await loginUser({ email, password });
+        if (res.user?.role === 'admin') {
+          toast('Admin accounts must use the Admin Login portal.', 'error');
+          return;
+        }
+        onLoginSuccess({
+          name: res.user.name || 'Customer',
+          emailOrPhone: res.user.email
+        }, res.token);
+      }
+    } catch (err: any) {
+      toast(err.response?.data?.error || 'Authentication failed', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -66,11 +103,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <Sparkles className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-light font-display uppercase tracking-wider text-white">
-            Customer <span className="font-bold text-[#d4af37]">Login</span>
+            Customer <span className="font-bold text-[#d4af37]">{mode === 'login' ? 'Login' : 'Register'}</span>
           </h2>
           <p className="text-xs text-zinc-400 uppercase tracking-widest">
             Access your garage & service history
           </p>
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="flex justify-center mb-2">
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            className={`text-[10px] font-bold uppercase tracking-widest px-4 py-1 border-b-2 ${mode === 'login' ? 'border-[#d4af37] text-white' : 'border-transparent text-zinc-500'}`}
+          >
+            Log In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            className={`text-[10px] font-bold uppercase tracking-widest px-4 py-1 border-b-2 ${mode === 'register' ? 'border-[#d4af37] text-white' : 'border-transparent text-zinc-500'}`}
+          >
+            Create Account
+          </button>
         </div>
 
         {/* Login Method Toggle */}
@@ -105,22 +160,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         {/* Option 1: Email + Password */}
         {loginMethod === 'email' && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Alexander Vance"
-                  className="w-full bg-[#181822] border border-[#2a2a3a] p-3 pl-10 text-xs text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
-                />
-                <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
+            {mode === 'register' && (
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Alexander Vance"
+                    className="w-full bg-[#181822] border border-[#2a2a3a] p-3 pl-10 text-xs text-white focus:border-[#d4af37] focus:outline-none rounded-sm"
+                  />
+                  <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">
@@ -158,9 +215,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             <button
               type="submit"
+              disabled={isLoading}
               className="w-full bg-[#d4af37] hover:bg-[#e5c158] text-black py-3.5 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors shadow-lg rounded-sm"
             >
-              <span>Login To Garage</span>
+              <span>{isLoading ? 'Processing...' : (mode === 'login' ? 'Login To Garage' : 'Create Account')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

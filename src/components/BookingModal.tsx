@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { INITIAL_CUSTOMER_CARS } from '../data/mockData';
 import { CustomerCar, ServiceBooking, ServiceItem } from '../types';
 import { X, CheckCircle2, Calendar, Clock, ArrowRight, ArrowLeft, QrCode, ShieldCheck, Upload, RotateCcw } from 'lucide-react';
+import { createBooking } from '../api/bookings';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   // Selected services
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
-    preselectedServiceId ? [preselectedServiceId] : ['interior-cleaning', 'ceramic-coating']
+    preselectedServiceId ? [preselectedServiceId] : (services.length > 0 ? [services[0].id] : [])
   );
 
   // Date & Time Slot
@@ -68,13 +69,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setCarSelectionError(false);
       if (preselectedServiceId) {
         setSelectedServiceIds([preselectedServiceId]);
+      } else if (services.length > 0) {
+        setSelectedServiceIds([services[0].id]);
       } else {
-        setSelectedServiceIds(['interior-cleaning', 'ceramic-coating']);
+        setSelectedServiceIds([]);
       }
       setDate('12 August 2026');
       setTimeSlot('3:00 PM');
     }
   }, [isOpen, preselectedCar, preselectedServiceId, cars]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -100,46 +105,64 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setCreatedBooking(null);
     setTxnId('');
     setPaymentScreenshot(null);
-    setSelectedServiceIds(['interior-cleaning', 'ceramic-coating']);
+    setSelectedServiceIds(services.length > 0 ? [services[0].id] : []);
   };
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     if (!selectedCar) {
       setCarSelectionError(true);
       setStep(1);
       return;
     }
 
-    const serviceNamesString = selectedServicesList.map(s => s.name).join(', ');
-    const newBooking: ServiceBooking = {
-      id: `b-${Date.now()}`,
-      bookingNumber: `PC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName,
-      customerPhone,
-      customerEmail,
-      serviceType: 'studio',
-      serviceId: selectedServiceIds[0],
-      serviceName: serviceNamesString,
-      carDetails: {
-        make: selectedCar.make,
-        model: selectedCar.model,
-        year: selectedCar.year,
-        color: selectedCar.color || 'Standard',
-        licensePlate: selectedCar.licensePlate,
-        carType: `${selectedCar.make} ${selectedCar.model}`
-      },
-      addOns: [],
-      date,
-      timeSlot,
-      totalPrice,
-      status: 'Confirmed',
-      assignedBay: 'Clean Room Bay #1',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+    try {
+      setIsSubmitting(true);
+      const newBookingData = await createBooking({
+        vehicle_id: selectedCar.id,
+        service_ids: selectedServiceIds,
+        date,
+        time_slot: timeSlot,
+        total_amount: totalPrice,
+        transaction_id: txnId || undefined
+      });
+      
+      // Map API response to local state for instant UI update
+      const newBooking: ServiceBooking = {
+        id: newBookingData.id,
+        bookingNumber: (newBookingData as any).booking_number || newBookingData.bookingNumber,
+        customerName,
+        customerPhone,
+        customerEmail,
+        serviceType: 'studio',
+        serviceId: selectedServiceIds[0],
+        serviceName: selectedServicesList.map(s => s.name).join(', '),
+        carDetails: {
+          make: selectedCar.make,
+          model: selectedCar.model,
+          year: selectedCar.year,
+          color: selectedCar.color || 'Standard',
+          licensePlate: selectedCar.licensePlate,
+          carType: `${selectedCar.make} ${selectedCar.model}`
+        },
+        addOns: [],
+        date: newBookingData.date,
+        timeSlot: (newBookingData as any).time_slot || newBookingData.timeSlot,
+        totalPrice: (newBookingData as any).total_amount || newBookingData.totalPrice || totalPrice,
+        status: newBookingData.status,
+        assignedBay: 'Clean Room Bay #1',
+        createdAt: (newBookingData as any).created_at || newBookingData.createdAt
+      };
 
-    setCreatedBooking(newBooking);
-    onAddBookingToState(newBooking);
-    setStep(6);
+      setCreatedBooking(newBooking);
+      onAddBookingToState(newBooking);
+      setStep(6);
+    } catch (error: any) {
+      console.error('Booking failed', error);
+      const errorMsg = error.response?.data?.details?.message || error.response?.data?.error || error.message || 'Unknown error';
+      alert(`Failed to book service: ${errorMsg}. Please try again.`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -562,10 +585,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </div>
               <button
                 onClick={handleConfirmPayment}
-                className="w-full sm:w-auto justify-center bg-[#d4af37] hover:bg-[#e5c158] text-black px-4 sm:px-8 py-3.5 text-[11px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-xl whitespace-nowrap"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto justify-center bg-[#d4af37] hover:bg-[#e5c158] disabled:opacity-50 text-black px-4 sm:px-8 py-3.5 text-[11px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-xl whitespace-nowrap"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Confirm Payment</span>
+                <span>{isSubmitting ? 'Processing...' : 'Confirm Payment'}</span>
               </button>
             </div>
           </div>

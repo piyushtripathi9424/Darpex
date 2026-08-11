@@ -29,8 +29,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         setActiveSection(currentView);
         return;
       }
+      const contactEl = document.getElementById('contact');
+      const galleryEl = document.getElementById('gallery');
       const servicesEl = document.getElementById('services');
-      if (servicesEl && window.scrollY >= servicesEl.offsetTop - 300) {
+
+      // Check from bottom to top using getBoundingClientRect
+      if (contactEl && contactEl.getBoundingClientRect().top <= 300) {
+        setActiveSection('contact');
+      } else if (galleryEl && galleryEl.getBoundingClientRect().top <= 300) {
+        setActiveSection('gallery');
+      } else if (servicesEl && servicesEl.getBoundingClientRect().top <= 300) {
         setActiveSection('services');
       } else {
         setActiveSection('home');
@@ -67,10 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     return (
       <header className="sticky top-0 z-50 bg-[#0c0c10]/80 backdrop-blur-md border-b border-[#262636]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div 
-            onClick={() => setCurrentView('home')}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
+          <div className="flex items-center gap-3 cursor-default">
             <div className="w-9 h-9 bg-[#d4af37] text-black flex items-center justify-center font-black rounded-sm shadow-lg">
               <Sparkles className="w-5 h-5 text-black" />
             </div>
@@ -82,15 +87,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Admin Operations Console
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentView('home')}
-              className="text-xs text-zinc-300 hover:text-white font-bold uppercase tracking-widest flex items-center gap-1.5 bg-[#181822] border border-[#2a2a3a] px-4 py-2 rounded-sm transition-colors"
-            >
-              ← Back To Customer Site
-            </button>
           </div>
         </div>
       </header>
@@ -157,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="flex items-center gap-2 bg-[#181822] border border-[#d4af37]/40 px-3 py-1.5 rounded-sm">
                   <User className="w-3.5 h-3.5 text-[#d4af37]" />
                   <span className="text-xs font-bold text-white tracking-wider uppercase truncate max-w-[140px]">
-                    {user.name}
+                    {user.name || 'Customer'}
                   </span>
                 </div>
                 <button
@@ -174,15 +170,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             <>
               <button 
                 onClick={() => handleNavSectionClick('gallery')} 
-                className="py-1 transition-colors hover:text-[#d4af37]"
+                className={`py-1 transition-all duration-300 hover:text-[#d4af37] relative group ${activeSection === 'gallery' ? 'text-white' : ''}`}
               >
                 Gallery
+                <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-[#d4af37] transform origin-left transition-transform duration-300 ${activeSection === 'gallery' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
               </button>
               <button 
                 onClick={() => handleNavSectionClick('contact')} 
-                className="py-1 transition-colors hover:text-[#d4af37]"
+                className={`py-1 transition-all duration-300 hover:text-[#d4af37] relative group ${activeSection === 'contact' ? 'text-white' : ''}`}
               >
                 Contact
+                <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-[#d4af37] transform origin-left transition-transform duration-300 ${activeSection === 'contact' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
               </button>
               <button 
                 onClick={onOpenLogin} 

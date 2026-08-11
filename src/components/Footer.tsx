@@ -114,14 +114,6 @@ export const Footer: React.FC<FooterProps> = ({
                 </button>
               </li>
               <li><button onClick={onOpenBooking} className="hover:text-[#d4af37] transition-colors">Book Car Service</button></li>
-              <li>
-                <button
-                  onClick={() => setCurrentView('admin-login')}
-                  className="hover:text-[#d4af37] text-zinc-400 transition-colors flex items-center gap-1 mt-3 text-[11px]"
-                >
-                  <Lock className="w-3 h-3 text-[#d4af37]" /> Admin Portal
-                </button>
-              </li>
             </ul>
           </div>
 

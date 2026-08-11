@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CustomerCar, ServiceBooking } from '../types';
 import { INITIAL_CUSTOMER_CARS } from '../data/mockData';
 import { Car, Clock, Plus, Trash2, Edit2, ShieldCheck, ArrowRight, Calendar, CheckCircle2, RefreshCw, X } from 'lucide-react';
+import { getVehicles, addVehicle, updateVehicle, deleteVehicle, uploadVehicleImage, Vehicle } from '../api/vehicles';
 import { useToast } from './ToastContext';
 
 interface CustomerDashboardProps {
@@ -12,6 +13,7 @@ interface CustomerDashboardProps {
   cars: CustomerCar[];
   setCars: (cars: CustomerCar[]) => void;
   onDeleteBooking?: (bookingId: string) => void;
+  onTabChange?: (tab: 'garage' | 'services') => void;
 }
 
 export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
@@ -21,21 +23,24 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   userName,
   cars,
   setCars,
-  onDeleteBooking
+  onDeleteBooking,
+  onTabChange
 }) => {
   const [activeTab, setActiveTab] = useState<'garage' | 'services'>(defaultSubTab);
+  const { toast } = useToast();
+
+
 
   // Add / Edit Car Modal State
   const [showAddCarModal, setShowAddCarModal] = useState(false);
   const [editingCarId, setEditingCarId] = useState<string | null>(null);
 
-  const { toast } = useToast();
-
   const [make, setMake] = useState('BMW');
   const [model, setModel] = useState('3 Series');
   const [licensePlate, setLicensePlate] = useState('KA01AB1234');
   const [year, setYear] = useState('2023');
-  const [image, setImage] = useState('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80');
+  const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const openAddModal = () => {
     setEditingCarId(null);
@@ -43,7 +48,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
     setModel('');
     setLicensePlate('');
     setYear('2024');
-    setImage('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80');
+    setImage('');
+    setImageFile(null);
     setShowAddCarModal(true);
   };
 
@@ -54,76 +60,91 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
     setLicensePlate(car.licensePlate);
     setYear(String(car.year));
     setImage(car.image);
+    setImageFile(null);
     setShowAddCarModal(true);
   };
 
-  const handleDeleteCar = (carId: string) => {
+  const handleDeleteCar = async (carId: string) => {
     if (confirm('Are you sure you want to remove this vehicle from your garage?')) {
-      const carToDelete = cars.find(c => c.id === carId);
-      setCars(cars.filter(c => c.id !== carId));
-      if (carToDelete) {
-        toast(`${carToDelete.make} ${carToDelete.model} has been removed.`, 'info');
+      try {
+        await deleteVehicle(carId);
+        const carToDelete = cars.find(c => c.id === carId);
+        setCars(cars.filter(c => c.id !== carId));
+        if (carToDelete) {
+          toast(`${carToDelete.make} ${carToDelete.model} has been removed.`, 'info');
+        }
+      } catch (error: any) {
+        toast(error.response?.data?.error || 'Failed to delete vehicle', 'error');
       }
     }
   };
 
-  const handleSaveCar = (e: React.FormEvent) => {
+  const handleSaveCar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingCarId) {
-      setCars(cars.map(c => c.id === editingCarId ? {
-        ...c,
-        make,
-        model,
-        licensePlate,
-        year: Number(year),
-        image: image || c.image
-      } : c));
-      toast(`${make} ${model} details updated.`, 'success');
-    } else {
-      const createdCar: CustomerCar = {
-        id: `car-${Date.now()}`,
-        make,
-        model,
-        licensePlate,
-        year: Number(year),
-        color: 'Black',
-        image: image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
-        lastServiceDate: 'Newly Added',
-        nextRecommendedService: 'Basic Wash & Detailing',
-        paintConditionScore: 9.2
-      };
-      setCars([...cars, createdCar]);
-      toast(`${make} ${model} added to your garage.`, 'success');
+    try {
+      let finalImageUrl: string | undefined = image || undefined;
+      
+      if (imageFile) {
+        const uploadResult = await uploadVehicleImage(imageFile);
+        finalImageUrl = uploadResult.url;
+      }
+
+      if (editingCarId) {
+        const updatedVehicle = await updateVehicle(editingCarId, {
+          make,
+          model,
+          registration_number: licensePlate,
+          year: Number(year),
+          image_url: finalImageUrl || undefined
+        } as any);
+
+        setCars(cars.map(c => c.id === editingCarId ? {
+          ...c,
+          make,
+          model,
+          licensePlate,
+          year: Number(year),
+          image: finalImageUrl || c.image
+        } : c));
+        toast(`${make} ${model} details updated.`, 'success');
+      } else {
+        const createdVehicle = await addVehicle({
+          make,
+          model,
+          registration_number: licensePlate,
+          year: Number(year),
+          color: 'Black',
+          image_url: finalImageUrl || undefined,
+        });
+        
+        const createdCar: CustomerCar = {
+          id: createdVehicle.id,
+          make: createdVehicle.make,
+          model: createdVehicle.model,
+          licensePlate: createdVehicle.registration_number,
+          year: createdVehicle.year || new Date().getFullYear(),
+          color: createdVehicle.color || 'Black',
+          image: createdVehicle.image_url || '',
+          lastServiceDate: 'Newly Added',
+          nextRecommendedService: 'Basic Wash & Detailing',
+          paintConditionScore: 9.2
+        };
+        setCars([...cars, createdCar]);
+        toast(`${make} ${model} added to your garage.`, 'success');
+      }
+      setShowAddCarModal(false);
+    } catch (error) {
+      toast('Failed to save vehicle details', 'error');
     }
-    setShowAddCarModal(false);
   };
 
   // Previous Services
-  const staticPreviousServices = [
-    {
-      id: 'prev-1',
-      vehicleName: 'Honda City (KA05CD5678)',
-      serviceName: 'Full Car Cleaning',
-      date: '20 July 2026',
-      totalPrice: 3499,
-      carObj: cars.find(c => c.model.includes('City')) || cars[1] || cars[0],
-      serviceId: 'full-cleaning'
-    },
-    {
-      id: 'prev-2',
-      vehicleName: 'BMW 3 Series (KA01AB1234)',
-      serviceName: 'Basic Wash & Vacuum',
-      date: '02 June 2026',
-      totalPrice: 999,
-      carObj: cars.find(c => c.model.includes('3 Series')) || cars[0],
-      serviceId: 'basic-wash'
-    }
-  ];
+  const staticPreviousServices: any[] = [];
 
-  const activeBookings = bookings.filter(b => b.status !== 'Completed');
+  const activeBookings = bookings.filter(b => b.status !== 'Completed' && b.status !== 'Cancelled');
   const completedBookings = bookings.filter(b => b.status === 'Completed').map(b => ({
     id: b.id,
-    vehicleName: `${b.carDetails.make} ${b.carDetails.model} (${b.carDetails.licensePlate || 'Registered'})`,
+    vehicleName: b.carDetails ? `${b.carDetails.make} ${b.carDetails.model} (${b.carDetails.licensePlate || 'Registered'})` : 'Unknown Vehicle',
     serviceName: b.serviceName,
     date: b.date,
     totalPrice: b.totalPrice,
@@ -139,7 +160,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         
         {/* Customer Profile Banner */}
         {(() => {
-          const clientName = userName || 'Alexander Vance';
+          const clientName = userName || 'Customer';
           const nameParts = clientName.split(' ');
           const initials = nameParts.length >= 2 
             ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
@@ -157,11 +178,11 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                       {nameParts[0]} <span className="font-bold text-[#d4af37]">{nameParts.slice(1).join(' ')}</span>
                     </h1>
                     <span className="inline-block w-fit bg-[#181822] text-[#d4af37] border border-[#d4af37]/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded-sm whitespace-nowrap">
-                      VIP Executive Client
+                      Verified Client
                     </span>
                   </div>
                   <p className="text-xs text-zinc-400 uppercase tracking-widest mt-1 sm:mt-1 break-words">
-                    Client ID: PC-CLIENT-8801 • Garage Active
+                    Account Active • Garage Enabled
                   </p>
                 </div>
               </div>
@@ -174,7 +195,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <div className="h-8 w-px bg-[#262636]" />
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold block">Active Bookings</span>
-                  <div className="text-xl font-bold text-[#d4af37] font-display">{bookings.length} Services</div>
+                  <div className="text-xl font-bold text-[#d4af37] font-display">{activeBookings.length} Services</div>
                 </div>
               </div>
             </div>
@@ -184,7 +205,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         {/* Navigation Tabs */}
         <div className="flex items-center gap-3 border-b border-[#262636] pb-4">
           <button
-            onClick={() => setActiveTab('garage')}
+            onClick={() => {
+              setActiveTab('garage');
+              if (onTabChange) onTabChange('garage');
+            }}
             className={`px-6 py-3 rounded-sm text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all ${
               activeTab === 'garage'
                 ? 'bg-[#d4af37] text-black font-extrabold shadow-md'
@@ -195,7 +219,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveTab('services')}
+            onClick={() => {
+              setActiveTab('services');
+              if (onTabChange) onTabChange('services');
+            }}
             className={`px-6 py-3 rounded-sm text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all ${
               activeTab === 'services'
                 ? 'bg-[#d4af37] text-black font-extrabold shadow-md'
@@ -318,7 +345,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                         </h3>
 
                         <p className="text-xs text-zinc-300">
-                          Vehicle: <span className="text-white font-semibold">{b.carDetails.make} {b.carDetails.model}</span> ({b.carDetails.licensePlate || 'Registered'})
+                          Vehicle: <span className="text-white font-semibold">{b.carDetails?.make || 'Unknown'} {b.carDetails?.model || ''}</span> ({b.carDetails?.licensePlate || 'Registered'})
                         </p>
 
                         <div className="text-xs text-zinc-400 flex flex-wrap items-center gap-4 pt-1">
@@ -471,13 +498,15 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">Car Image URL (Optional)</label>
+                <label className="block text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-1">
+                  Car Image File {editingCarId ? '(Optional if keeping existing)' : '*'}
+                </label>
                 <input
-                  type="text"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full bg-[#181822] border border-[#2a2a3a] p-3 text-white focus:outline-none focus:border-[#d4af37] text-[11px] rounded-sm"
+                  type="file"
+                  accept="image/*"
+                  required={!editingCarId}
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  className="w-full bg-[#181822] border border-[#2a2a3a] p-2 text-xs text-zinc-300 focus:outline-none rounded-sm file:mr-4 file:py-1 file:px-3 file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-widest file:bg-[#d4af37] file:text-black hover:file:bg-[#e5c158] cursor-pointer"
                 />
               </div>
 

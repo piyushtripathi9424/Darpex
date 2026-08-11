@@ -78,8 +78,8 @@ export interface ServiceBooking {
   totalPrice: number;
   status: 'Pending' | 'Confirmed' | 'In Bay (Decontamination)' | 'In Bay (Polishing)' | 'In Bay (Curing)' | 'Completed' | 'Cancelled';
   assignedBay?: string;
-  notes?: string;
   createdAt: string;
+  paymentStatus?: 'Pending' | 'Verified';
 }
 
 export interface StudioBay {
