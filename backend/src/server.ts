@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
 
@@ -27,6 +28,23 @@ app.use('/api/admin', adminRoutes);
 // Basic health check route
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Backend server is running correctly.' });
+});
+
+// Serve frontend in production
+// Resolve the __dirname for ES modules or CommonJS
+const isESM = typeof __dirname === 'undefined';
+const currentDir = isESM ? path.dirname(new URL(import.meta.url).pathname) : __dirname;
+
+// Path to the frontend build directory (../dist since we are in backend/src or backend/dist)
+const frontendDistPath = path.join(currentDir, '..', '..', 'dist');
+
+app.use(express.static(frontendDistPath));
+
+// Catch-all route to serve the React app for non-API requests
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  }
 });
 
 app.listen(port, () => {
