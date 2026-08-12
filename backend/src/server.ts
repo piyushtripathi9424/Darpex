@@ -41,9 +41,11 @@ const frontendDistPath = path.join(currentDir, '..', '..', 'dist');
 app.use(express.static(frontendDistPath));
 
 // Catch-all route to serve the React app for non-API requests
-app.get('*', (req, res) => {
+app.use((req, res, next) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
+  } else {
+    next();
   }
 });
 
