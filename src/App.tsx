@@ -39,7 +39,7 @@ import { getVehicles } from './api/vehicles';
 export default function App() {
   const getInitialView = () => {
     if (typeof window === 'undefined') return 'home';
-    const path = window.location.pathname;
+    const path = window.location.pathname.replace(/\/$/, ''); // Remove trailing slash
     if (path === '/my-garage') return 'garage';
     if (path === '/my-services') return 'my-services';
     if (path === '/admin/login') return 'admin-login';
