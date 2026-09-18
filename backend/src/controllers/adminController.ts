@@ -74,7 +74,6 @@ export const getAllCustomers = async (req: Request, res: Response): Promise<void
           )
         )
       `)
-      .eq('role', 'customer')
       .order('created_at', { ascending: false });
 
     if (error) {
