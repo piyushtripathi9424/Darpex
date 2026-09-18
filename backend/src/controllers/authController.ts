@@ -109,9 +109,35 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const googleAuth = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const localClient = createAuthClient();
+    const { data, error } = await localClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: process.env.APP_URL ? `${process.env.APP_URL}/auth/callback` : 'http://localhost:5173/auth/callback',
+      },
+    });
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    if (data.url) {
+      res.redirect(data.url);
+    } else {
+      res.status(500).json({ error: 'Failed to generate Google login URL' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const user = (req as any).user;
+    const userId = user.id;
 
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -120,7 +146,23 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       .single();
 
     if (error || !profile) {
-      res.status(404).json({ error: 'User profile not found' });
+      // Auto-create profile for OAuth users who bypass the standard /register flow
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Customer';
+      
+      const { data: newProfile, error: createError } = await supabase.from('profiles').insert([
+        {
+          id: userId,
+          name: name,
+          role: 'customer'
+        }
+      ]).select().single();
+
+      if (createError) {
+        res.status(500).json({ error: 'Failed to sync user profile.' });
+        return;
+      }
+      
+      res.status(200).json({ profile: newProfile });
       return;
     }
 

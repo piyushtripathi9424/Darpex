@@ -70,6 +70,37 @@ export default function App() {
     }
   });
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/auth/callback') {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        if (accessToken) {
+          localStorage.setItem('jwt_token', accessToken);
+          getMe().then(res => {
+            if (res?.profile) {
+              const user = { name: res.profile.name, emailOrPhone: res.profile.email || 'OAuth User' };
+              localStorage.setItem('user_session', JSON.stringify(user));
+              setCurrentUser(user);
+              setCurrentView('garage');
+              window.history.replaceState({ view: 'garage' }, '', '/my-garage');
+              toast('Successfully logged in with Google!', 'success');
+            }
+          }).catch(err => {
+            console.error(err);
+            toast('Failed to complete Google login.', 'error');
+            setCurrentView('home');
+            window.history.replaceState({ view: 'home' }, '', '/');
+          });
+        }
+      } else {
+        setCurrentView('home');
+        window.history.replaceState({ view: 'home' }, '', '/');
+      }
+    }
+  }, []);
+
   const [preselectedServiceId, setPreselectedServiceId] = useState<string | undefined>(undefined);
   const [preselectedCar, setPreselectedCar] = useState<CustomerCar | undefined>(undefined);
 
