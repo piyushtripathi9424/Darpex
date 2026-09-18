@@ -81,6 +81,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           timeSlot: b.timeSlot,
           totalPrice: b.totalPrice,
           status: b.status,
+          paymentStatus: b.paymentStatus,
           assignedBay: 'Clean Room Bay #1',
           createdAt: b.createdAt
         }));
