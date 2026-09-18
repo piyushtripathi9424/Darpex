@@ -112,10 +112,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
     const localClient = createAuthClient();
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+    
     const { data, error } = await localClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: process.env.APP_URL ? `${process.env.APP_URL}/auth/callback` : 'http://localhost:5173/auth/callback',
+        redirectTo: `${baseUrl}/auth/callback`,
       },
     });
 
